@@ -5,6 +5,10 @@ mode, sculpt it with a handful of sliders, check that a ballnose can actually cu
 and export a watertight STL (in millimetres) or a grayscale heightmap — all in the
 browser, with no build step and nothing to install.
 
+### ▶ [Open the live app](https://knnurl.github.io/fieldform-studio/)
+
+Runs entirely in your browser — nothing to download.
+
 It's a single self-contained HTML file. **Double-click it to run.** Everything —
 the maths, the 3D preview, the machinability analysis and the exporters — lives in
 that one file.
