@@ -1,6 +1,6 @@
 # Fieldform Studio
 
-**Fieldform turns mathematical fields into CNC-ready relief carvings.** Pick a field
+**Fieldform turns mathematical fields into 3D CNC-ready relief carvings.** Pick a field
 mode, sculpt it with a handful of sliders, check that a ballnose can actually cut it,
 and export a watertight STL (in millimetres) or a grayscale heightmap — all in the
 browser, with no build step and nothing to install.
@@ -10,11 +10,10 @@ the maths, the 3D preview, the machinability analysis and the exporters — live
 that one file.
 
 ```
-fieldform_studio.html   ← the studio (light theme, recommended)
-fieldform.html          ← the same engine in a compact dark UI
+fieldform_studio.html   ← the app
 ```
 
-Open either one in a modern browser (Chrome or Edge recommended — see
+Open it in a modern browser (Chrome or Firefox recommended — see
 [Browser support](#browser-support)).
 
 ---
@@ -23,7 +22,6 @@ Open either one in a modern browser (Chrome or Edge recommended — see
 
 - [What it does](#what-it-does)
 - [Quick start](#quick-start)
-- [The two apps](#the-two-apps)
 - [Field modes](#field-modes)
 - [The four tabs](#the-four-tabs)
   - [Pattern](#pattern-tab)
@@ -74,23 +72,6 @@ sculptural relief.
 5. On the **Project** tab, click **↓ Watertight STL** to export.
 
 That's the whole loop. Everything else below is detail.
-
----
-
-## The two apps
-
-Both files share the identical relief engine and exporters — only the interface
-skin differs, and each remembers its own theme choice.
-
-| | `fieldform_studio.html` | `fieldform.html` |
-|---|---|---|
-| Look | Light "studio" theme, larger type | Compact dark theme |
-| Default | Opens on a tuned starting config | Opens on the base defaults |
-| Extras | Config library (folder switching) | — |
-| Best for | Everyday use | Small screens / dark rooms |
-
-Both have a light/dark toggle (the **◑ / ☀** button), so the difference is really
-just the default and the config library.
 
 ---
 
@@ -196,7 +177,7 @@ fine detail — the result is exactly *n*-fold symmetric.
   touched).
 - **🎲 Randomize** rolls every unlocked shape slider and a fresh seed. **↶ Undo**
   steps back through the history.
-- The **🔒 lock** beside any slider pins it, so Randomize skips it. In the studio,
+- The **🔒 lock** beside any slider pins it, so Randomize skips it.
   **Quiet zones**, **Macro carrier** and **Pattern zoom** start locked.
 - **Seed** — the same seed + parameters always reproduces the same surface. Use the
   **← →** arrows to walk seeds and **↻** for a random one.
@@ -205,7 +186,7 @@ fine detail — the result is exactly *n*-fold symmetric.
 
 ## Config library
 
-*(Studio only, Chrome/Edge.)* On the **Project** tab, **🔗 Link configs folder** lets
+*(Chrome only.)* On the **Project** tab, **🔗 Link configs folder** lets
 you pick a local folder of `.json` setups. They appear in a dropdown you can switch
 between with one click, and **↓ Save into configs folder** writes the current setup
 back. The linked folder is remembered between sessions.
@@ -253,7 +234,7 @@ stepover. The status **LED goes green** when the flagged area is negligible.
 
 ## Themes & appearance
 
-- **◑ / ☀** toggles light/dark; each app remembers its own choice.
+- **◑ / ☀** toggles light/dark; your choice is remembered.
 - **Block colour** (Stock → Appearance) recolours the previewed material — pick
   whatever reads best for the shape you're judging.
 
@@ -271,10 +252,11 @@ A relief is fully determined by its parameters and seed. That means:
 
 ## Browser support
 
-- **Chrome / Edge** — full support, including the config library (File System
-  Access API).
-- **Firefox / Safari** — everything works *except* the config-folder linking; use
-  **Save / Import preset** for `.json` instead.
+- **Chrome** — full support, including the config library (File System Access API).
+- **Firefox** — everything works *except* the config-folder linking (that API is
+  Chromium-only); use **Save / Import preset** for `.json` instead.
+- Other Chromium browsers (Edge, Brave) also support the config library; Safari
+  works apart from folder linking.
 - Requires WebGL for the 3D preview.
 
 No network access is needed to run — the only external requests are for the web

@@ -1239,7 +1239,7 @@ paintSwatches();
 // boot
 buildPhases();
 initThree();
-let bootTheme='light'; try{bootTheme=localStorage.getItem('ffs-theme')||'light';}catch(e){}
+let bootTheme='dark'; try{bootTheme=localStorage.getItem('ffs-theme')||'dark';}catch(e){}
 applyTheme(bootTheme);
 buildModel();
 syncUI();  // reflect the opening config in every control
