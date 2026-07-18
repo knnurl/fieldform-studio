@@ -1,0 +1,13 @@
+# large / unrelated working files (not part of the app)
+RidgeDesigns/
+*.pdf
+Screenshot*.png
+
+# generated exports — users make their own
+*.stl
+fieldform_heightmap_*.png
+fieldform_*.stl
+
+# OS / editor cruft
+Thumbs.db
+.DS_Store

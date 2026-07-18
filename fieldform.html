@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fieldform</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0b0f; --panel:#15171e; --panel2:#1e212a; --line:#2d323d; --line2:#3c4250;
+  --txt:#eceae3; --dim:#969ba8; --faint:#5c616d;
+  --acc:#e07a54; --acc2:#5fa0d8; --ok:#8fb35f; --warn:#e0a94e; --bad:#d05a40;
+  --c-pattern:#e07a54; --c-stock:#5fa0d8; --c-mach:#d8a24e; --c-proj:#a785da;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;
+  --sans:'Inter',-apple-system,Segoe UI,Roboto,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--sans);background:var(--bg);color:var(--txt);overflow:hidden;-webkit-font-smoothing:antialiased}
+.app{display:flex;height:100vh}
+.side{width:360px;flex-shrink:0;display:flex;flex-direction:column;background:linear-gradient(180deg,#101218,#0c0d11);border-right:1px solid var(--line);overflow:hidden}
+.side::-webkit-scrollbar{width:9px}.side::-webkit-scrollbar-thumb{background:#23262e;border-radius:5px;border:2px solid var(--bg)}
+
+.brand{padding:15px 16px 13px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#13151c,#0e1014)}
+.brand .mark{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--acc)}
+.brand .tagline{display:none}
+
+.tabs{display:flex;gap:2px;padding:0 10px;border-bottom:1px solid var(--line);background:#0e1015}
+.tab{flex:1;background:none;border:none;color:var(--dim);font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:13px 4px;cursor:pointer;transition:.15s;box-shadow:inset 0 -2px 0 transparent}
+.tab:hover{color:var(--txt)}
+.tab:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}
+.tab.active[data-tab=pattern]{color:var(--c-pattern);box-shadow:inset 0 -2px 0 var(--c-pattern)}
+.tab.active[data-tab=stock]{color:var(--c-stock);box-shadow:inset 0 -2px 0 var(--c-stock)}
+.tab.active[data-tab=machining]{color:var(--c-mach);box-shadow:inset 0 -2px 0 var(--c-mach)}
+.tab.active[data-tab=project]{color:var(--c-proj);box-shadow:inset 0 -2px 0 var(--c-proj)}
+.tabwrap{flex:1;overflow-y:auto;padding:16px 15px}
+.tabwrap::-webkit-scrollbar{width:9px}.tabwrap::-webkit-scrollbar-thumb{background:#272b34;border-radius:5px;border:2px solid var(--bg)}
+.tabpage{display:none}
+.tabpage.active{display:block;animation:fade .2s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.led{width:9px;height:9px;border-radius:50%;background:var(--faint);flex:0 0 auto}
+.led.ok{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.led.warn{background:var(--warn);box-shadow:0 0 8px var(--warn)}
+.led.bad{background:var(--bad);box-shadow:0 0 8px var(--bad)}
+.statusbar{display:flex;align-items:center;gap:10px;padding:11px 15px;border-top:1px solid var(--line);background:#0d0f13;font-family:var(--mono);font-size:10.5px;color:var(--dim);overflow:hidden}
+.statusbar .st{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.statusbar .st.grow{flex:1}
+.statusbar .st b{color:var(--txt);font-weight:600}
+.subhead{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--ac,var(--acc));opacity:.95;margin:18px 0 12px;padding-top:14px;border-top:1px solid var(--line)}
+.tabpage>.subhead:first-child{margin-top:0;padding-top:0;border-top:none}
+
+.row{margin-bottom:12px}
+label{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--txt);margin-bottom:7px;font-weight:450}
+label .v{font-family:var(--mono);font-size:11px;color:var(--dim);font-weight:500}
+input[type=range]{width:100%;height:4px;background:var(--line);border-radius:3px;outline:none;-webkit-appearance:none;cursor:pointer;accent-color:var(--acc)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--acc);cursor:pointer;transition:transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.5)}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.18)}
+input[type=range]::-moz-range-thumb{width:15px;height:15px;border:none;border-radius:50%;background:var(--acc);cursor:pointer}
+input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--acc2)}
+input[type=color].cin{width:40px;height:26px;border:1px solid var(--line);border-radius:6px;background:none;cursor:pointer;padding:0}
+.swatches{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
+.sw{width:100%;aspect-ratio:1/1;border-radius:6px;border:1px solid rgba(0,0,0,.25);cursor:pointer;transition:transform .12s;padding:0}
+.sw:hover{transform:scale(1.12)}
+.sw.on{box-shadow:0 0 0 2px var(--acc);border-color:var(--acc)}
+
+.dims{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+.dims .f{display:flex;flex-direction:column;gap:5px}
+.dims label{font-size:10.5px;color:var(--dim);justify-content:flex-start;margin:0;letter-spacing:.3px}
+input[type=number]{background:var(--bg);border:1px solid var(--line);color:var(--txt);border-radius:7px;padding:8px;font-family:var(--mono);font-size:12px;width:100%;transition:border-color .15s}
+input[type=number]:focus{outline:none;border-color:var(--acc)}
+.sel{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--txt);border-radius:7px;padding:9px;font-size:12.5px;cursor:pointer;font-family:var(--sans);transition:border-color .15s}
+.sel:focus{outline:none;border-color:var(--acc)}
+
+.checkrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
+.checkrow label{margin:0}
+
+.seedrow{display:flex;gap:7px}
+.seedrow input{flex:1;text-align:center}
+.seedrow .btn{width:auto;padding:8px 12px}
+
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:7px;padding:9px 10px;font-size:12.5px;cursor:pointer;transition:.15s;width:100%;font-weight:500;font-family:var(--sans)}
+.btn:hover{border-color:var(--acc);color:#fff}
+.btn:active{transform:translateY(1px)}
+.btn:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.btn.acc{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn.acc:hover{background:#c4663f}
+.btn.b2{background:var(--acc2);border-color:var(--acc2);color:#fff}
+.btn.b2:hover{background:#5a8bb8}
+.brow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+.dice,.lock{flex:0 0 auto;width:32px;height:26px;padding:0;font-size:12px;line-height:1;background:var(--bg);border:1px solid var(--line);color:var(--dim);border-radius:7px;cursor:pointer;transition:.15s}
+.dice:hover{border-color:var(--acc);color:#fff;background:var(--panel2)}
+.lock{font-size:11px}
+.lock:hover{border-color:var(--acc2)}
+.lock.on{color:#fff;border-color:var(--acc2);background:rgba(106,155,204,.2)}
+.row .sl{display:flex;align-items:center;gap:7px}
+.row .sl input[type=range]{flex:1}
+
+.cnc{font-family:var(--mono);font-size:11px;line-height:1.95;color:var(--dim)}
+.cnc b{color:var(--txt);font-weight:600}
+.cnc .ok{color:var(--ok)}.cnc .warn{color:var(--warn)}
+
+.main{flex:1;position:relative}
+#view{width:100%;height:100%;display:block}
+.hud,.hint{position:absolute;bottom:14px;font-family:var(--mono);font-size:11px;color:var(--dim);background:rgba(10,11,14,.7);padding:8px 12px;border-radius:9px;border:1px solid var(--line);backdrop-filter:blur(6px)}
+.hud{left:16px;line-height:1.75;pointer-events:none}
+.hud b{color:var(--txt)}
+.hint{right:16px}
+.busy{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(10,11,14,.6);font-size:13px;color:var(--txt);font-family:var(--mono);letter-spacing:1px;backdrop-filter:blur(2px)}
+input[type=number].vin{width:58px;flex:none;background:var(--bg);border:1px solid var(--line);color:var(--dim);border-radius:6px;padding:2px 5px;font-family:var(--mono);font-size:11px;font-weight:500;text-align:right;-moz-appearance:textfield}
+input[type=number].vin::-webkit-inner-spin-button,input[type=number].vin::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+input[type=number].vin:focus{outline:none;border-color:var(--acc);color:var(--txt)}
+.brand{display:flex;align-items:center;justify-content:space-between}
+.help{width:26px;height:26px;border-radius:50%;border:1px solid var(--line);background:var(--panel2);color:var(--acc);cursor:pointer;font-family:var(--mono);font-size:13px;font-weight:600;line-height:1;transition:.15s;flex:none}
+.help:hover{border-color:var(--acc)}
+.tut-overlay{position:fixed;inset:0;display:none;z-index:50}
+.tut-overlay.show{display:block}
+.tut-spotlight{position:fixed;left:0;top:0;width:0;height:0;border-radius:10px;box-shadow:0 0 0 9999px rgba(5,6,8,.62);border:2px solid var(--acc);pointer-events:none;z-index:51;display:none;transition:left .28s cubic-bezier(.4,0,.2,1),top .28s cubic-bezier(.4,0,.2,1),width .28s cubic-bezier(.4,0,.2,1),height .28s cubic-bezier(.4,0,.2,1)}
+.tut{position:fixed;left:50%;top:50%;z-index:52;background:var(--panel);width:min(420px,92vw);border:1px solid var(--line2);border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,.6);overflow:hidden;transition:left .28s cubic-bezier(.4,0,.2,1),top .28s cubic-bezier(.4,0,.2,1)}
+.tut-top{padding:18px 20px 6px}
+.tut-kicker{font-family:var(--mono);font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--faint)}
+.tut-h{font-size:17px;font-weight:600;margin:4px 0 8px;color:var(--txt)}
+.tut-body{font-size:12.5px;line-height:1.65;color:var(--dim);min-height:96px}
+.tut-body b{color:var(--txt);font-weight:600}
+.tut-body .accent{color:var(--acc);font-weight:600}
+.tut-dots{display:flex;gap:6px;padding:4px 20px 0}
+.tut-dots span{width:7px;height:7px;border-radius:50%;background:var(--line);transition:.15s;cursor:pointer}
+.tut-dots span.on{background:var(--acc);transform:scale(1.15)}
+.tut-foot{display:flex;align-items:center;gap:8px;padding:14px 20px 18px}
+.tut-foot .btn{width:auto}
+.tut-foot .skip{margin-right:auto;background:none;border:none;color:var(--faint);cursor:pointer;font-size:12px;font-family:var(--sans)}
+.tut-foot .skip:hover{color:var(--txt)}
+/* light theme */
+:root[data-theme=light]{
+  --bg:#faf9f5; --panel:#ffffff; --panel2:#efede5; --line:#ddd9cc; --line2:#c8c4b6;
+  --txt:#20201d; --dim:#6b695f; --faint:#98958a;
+}
+:root[data-theme=light] body{background:var(--bg)}
+:root[data-theme=light] .side{background:linear-gradient(180deg,#f4f2ea,#eceadf)}
+:root[data-theme=light] .brand{background:none}
+:root[data-theme=light] .tabs{background:#f1efe6}
+:root[data-theme=light] .statusbar{background:#f1efe6}
+:root[data-theme=light] .hud,:root[data-theme=light] .hint{background:rgba(250,249,245,.82)}
+:root[data-theme=light] .busy{background:rgba(250,249,245,.6);color:var(--txt)}
+:root[data-theme=light] .side::-webkit-scrollbar-thumb,:root[data-theme=light] .tabwrap::-webkit-scrollbar-thumb{background:#cfccc0;border-color:#f4f2ea}
+:root[data-theme=light] .tut-spotlight{box-shadow:0 0 0 9999px rgba(60,58,50,.5)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="side">
+    <div class="brand"><div class="mark">◐ fieldform</div><div style="display:flex;gap:6px"><button class="help" id="themeBtn" title="Toggle light / dark theme">◑</button><button class="help" id="helpBtn" title="How to use fieldform">?</button></div></div>
+    <div class="tabs">
+      <button class="tab active" data-tab="pattern">Pattern</button>
+      <button class="tab" data-tab="stock">Stock</button>
+      <button class="tab" data-tab="machining">Machining</button>
+      <button class="tab" data-tab="project">Project</button>
+    </div>
+    <div class="tabwrap">
+
+      <section class="tabpage active" id="tab-pattern" style="--ac:var(--c-pattern)">
+        <div class="row"><label>Field mode</label>
+          <select id="mode" class="sel">
+            <option value="0">Coaxial · counter-rotating</option>
+            <option value="1">Chladni · cymatic plate</option>
+            <option value="2">Flux · magnetic field lines</option>
+            <option value="3">Resonance · φ-quasiperiodic</option>
+            <option value="4">Superformula · deformed rings</option>
+            <option value="5">Phyllotaxis · golden bump field</option>
+            <option value="6">Moiré · detuned gratings</option>
+          </select>
+        </div>
+        <div class="row"><label id="symmetry-l">Angular symmetry <span class="v" id="symmetry-v">5</span></label><input type="range" id="symmetry" min="1" max="12" step="1" value="5"></div>
+        <div class="row"><label id="harmonics-l">Harmonics <span class="v" id="harmonics-v">3</span></label><input type="range" id="harmonics" min="1" max="6" step="1" value="3"></div>
+        <div class="row"><label id="radialFreq-l">Ring density <span class="v" id="radialFreq-v">16</span></label><input type="range" id="radialFreq" min="3" max="40" step="0.5" value="16"></div>
+        <div class="row"><label id="bal-l">Counter-rotation <span class="v" id="bal-v">0.50</span></label><input type="range" id="bal" min="0" max="1" step="0.01" value="0.5"></div>
+        <div class="row"><label id="spiral-l">Spiral <span class="v" id="spiral-v">0.00</span></label><input type="range" id="spiral" min="-1.5" max="1.5" step="0.05" value="0"></div>
+        <div class="subhead">Symmetry fold</div>
+        <div class="checkrow"><label>Wedge repeat</label><input type="checkbox" id="wedge"></div>
+        <div class="checkrow"><label>Mirror alternate (kaleidoscope)</label><input type="checkbox" id="wedgeMirror" checked></div>
+        <div class="row" style="margin-top:11px"><label>Pieces around <span class="v" id="wedgeCount-v">6</span></label><input type="range" id="wedgeCount" min="2" max="16" step="1" value="6"></div>
+        <div class="row"><label>Fold rotation <span class="v" id="wedgeOffset-v">0°</span></label><input type="range" id="wedgeOffset" min="0" max="180" step="1" value="0"></div>
+        <div class="subhead">Composition</div>
+        <div class="row"><label>Macro carrier <span class="v" id="carrier-v">0.40</span></label><input type="range" id="carrier" min="0" max="0.8" step="0.02" value="0.4"></div>
+        <div class="row"><label>Carrier scale <span class="v" id="carrierScale-v">1.2</span></label><input type="range" id="carrierScale" min="0.5" max="3" step="0.1" value="1.2"></div>
+        <div class="row"><label>Quiet zones <span class="v" id="quiet-v">0.30</span></label><input type="range" id="quiet" min="0" max="0.9" step="0.02" value="0.3"></div>
+        <div class="row"><label>Quiet scale <span class="v" id="quietScale-v">1.0</span></label><input type="range" id="quietScale" min="0.4" max="3" step="0.1" value="1"></div>
+        <div class="row"><label>Origin X <span class="v" id="offX-v">0.15</span></label><input type="range" id="offX" min="-0.6" max="0.6" step="0.02" value="0.15"></div>
+        <div class="row"><label>Origin Y <span class="v" id="offY-v">-0.10</span></label><input type="range" id="offY" min="-0.6" max="0.6" step="0.02" value="-0.1"></div>
+        <div class="row"><label>Pattern zoom <span class="v" id="zoom-v">1.15×</span></label><input type="range" id="zoom" min="0.5" max="2.2" step="0.05" value="1.15"></div>
+        <div class="row"><label>Cross-section</label>
+          <select id="shaper" class="sel">
+            <option value="0">None · sinusoidal</option>
+            <option value="1">Plateau · flat crests</option>
+            <option value="2">Terrace · stepped levels</option>
+            <option value="3">Cove · flat valleys</option>
+          </select>
+        </div>
+        <div class="row"><label>Shaper strength <span class="v" id="shapeStr-v">0.50</span></label><input type="range" id="shapeStr" min="0" max="1" step="0.02" value="0.5"></div>
+        <div class="subhead">Detail</div>
+        <div class="row"><label>Harmonic falloff <span class="v" id="falloff-v">1.10</span></label><input type="range" id="falloff" min="0.4" max="2.2" step="0.05" value="1.1"></div>
+        <div class="row"><label>Radial decay <span class="v" id="decay-v">0.18</span></label><input type="range" id="decay" min="0" max="1.5" step="0.02" value="0.18"></div>
+        <div class="row"><label>Warp amount <span class="v" id="warpAmp-v">0.10</span></label><input type="range" id="warpAmp" min="0" max="0.4" step="0.01" value="0.1"></div>
+        <div class="row"><label>Warp scale <span class="v" id="warpScale-v">2.0</span></label><input type="range" id="warpScale" min="0.4" max="6" step="0.1" value="2"></div>
+        <div class="row"><label>Mesh resolution <span class="v" id="res-v">180</span></label><input type="range" id="res" min="60" max="320" step="10" value="180"></div>
+        <div class="subhead">Presets</div>
+        <div class="brow" id="presetGrid"></div>
+        <div class="subhead">Generate</div>
+        <div class="brow"><button class="btn b2" onclick="randomizeAll()">🎲 Randomize</button><button class="btn" onclick="undoRandom()">↶ Undo</button></div>
+        <div class="seedrow" style="margin-top:8px">
+          <button class="btn" onclick="stepSeed(-1)" title="Previous seed">←</button>
+          <input type="number" id="seed" value="12345" min="1">
+          <button class="btn" onclick="stepSeed(1)" title="Next seed">→</button>
+          <button class="btn b2" onclick="randSeed()" title="Random seed">↻</button>
+        </div>
+      </section>
+
+      <section class="tabpage" id="tab-stock" style="--ac:var(--c-stock)">
+        <div class="dims">
+          <div class="f"><label>X · rail</label><input type="number" id="Lx" value="400" min="20" step="1"></div>
+          <div class="f"><label>Y</label><input type="number" id="Ly" value="300" min="20" step="1"></div>
+          <div class="f"><label>Z</label><input type="number" id="Lz" value="100" min="5" step="1"></div>
+        </div>
+        <div class="row" style="margin-top:13px"><label>Retained floor <span class="v" id="base-v">30 mm</span></label><input type="range" id="base" min="3" max="80" step="1" value="30"></div>
+        <div class="subhead">Relief</div>
+        <div class="row"><label>Depth scale <span class="v" id="depth-v">1.00×</span></label><input type="range" id="depth" min="0.1" max="1" step="0.02" value="1"></div>
+        <div class="row"><label>Contrast (γ) <span class="v" id="contrast-v">1.00</span></label><input type="range" id="contrast" min="0.3" max="3" step="0.05" value="1"></div>
+        <div class="row"><label>Flat edge margin <span class="v" id="margin-v">0 mm</span></label><input type="range" id="margin" min="0" max="80" step="1" value="0"></div>
+        <div class="checkrow"><label>Invert relief</label><input type="checkbox" id="invert"></div>
+        <div class="checkrow"><label>Machinability smoothing</label><input type="checkbox" id="smooth"></div>
+        <div class="row" style="margin-top:11px"><label>Smoothing radius <span class="v" id="smoothR-v">3 mm</span></label><input type="range" id="smoothR" min="0.5" max="12" step="0.5" value="3"></div>
+        <div class="subhead">Appearance</div>
+        <div class="checkrow"><label>Block colour</label><input type="color" id="blockColor" class="cin" value="#cdbfae"></div>
+        <div class="swatches" id="swatches" style="margin-top:10px"></div>
+      </section>
+
+      <section class="tabpage" id="tab-machining" style="--ac:var(--c-mach)">
+        <div class="cnc" id="cnc"></div>
+        <div class="subhead">Tool</div>
+        <div class="row"><label>Material preset</label>
+          <select id="material" class="sel">
+            <option value="custom">Custom</option>
+            <option value="foam">Foam · rigid PU board</option>
+            <option value="mdf">MDF</option>
+            <option value="hardwood">Hardwood</option>
+          </select>
+        </div>
+        <div class="dims" style="grid-template-columns:1fr 1fr 1fr">
+          <div class="f"><label>Ballnose Ø</label><input type="number" id="toolD" value="6" min="0.5" step="0.5"></div>
+          <div class="f"><label>Flute len</label><input type="number" id="flute" value="25" min="1" step="1"></div>
+          <div class="f"><label>Feed /min</label><input type="number" id="feed" value="3000" min="1" step="50"></div>
+        </div>
+        <div class="row" style="margin-top:12px"><label>Stepover <span class="v" id="stepover-v">8 %</span></label><input type="range" id="stepover" min="2" max="40" step="1" value="8"></div>
+        <div class="checkrow"><label>Show machinability overlay</label><input type="checkbox" id="overlay"></div>
+        <div class="cnc" id="mstats" style="margin-top:10px"></div>
+      </section>
+
+      <section class="tabpage" id="tab-project" style="--ac:var(--c-proj)">
+        <div class="subhead">Geometry</div>
+        <div class="row"><label>Export resolution <span class="v" id="exportRes-v">400</span></label><input type="range" id="exportRes" min="200" max="640" step="20" value="400"></div>
+        <button class="btn acc" onclick="exportSTL()" style="margin-bottom:8px">↓ Watertight STL · mm</button>
+        <button class="btn" onclick="exportPNG()">↓ Heightmap (8-bit)</button>
+        <div class="subhead">Presets</div>
+        <button class="btn b2" onclick="savePreset()" style="margin-bottom:8px">↓ Save preset (.json)</button>
+        <button class="btn" onclick="document.getElementById('importFile').click()">↑ Import preset</button>
+        <input type="file" id="importFile" accept="application/json,.json" style="display:none">
+        <div class="subhead">Reset</div>
+        <button class="btn" onclick="resetAll()">Reset to defaults</button>
+      </section>
+
+    </div>
+    <div class="statusbar">
+      <span class="led" id="led-mach"></span>
+      <span class="st grow" id="st-mode">mode <b>Coaxial</b></span>
+      <span class="st" id="st-stock"><b>400×300×100</b></span>
+      <span class="st" id="st-mach"><b>—</b></span>
+    </div>
+  </div>
+
+  <div class="main">
+    <canvas id="view"></canvas>
+    <div class="hud" id="hud"></div>
+    <div class="hint">drag to orbit · scroll to zoom</div>
+    <div class="busy" id="busy">Building mesh…</div>
+  </div>
+</div>
+
+<div class="tut-overlay" id="tutOverlay">
+  <div class="tut-spotlight" id="tutSpot"></div>
+  <div class="tut">
+    <div class="tut-top">
+      <div class="tut-kicker" id="tutKicker">Quick start · 1 of 5</div>
+      <div class="tut-h" id="tutTitle"></div>
+      <div class="tut-body" id="tutBody"></div>
+    </div>
+    <div class="tut-dots" id="tutDots"></div>
+    <div class="tut-foot">
+      <button class="skip" id="tutSkip">Skip</button>
+      <button class="btn" id="tutBack">Back</button>
+      <button class="btn acc" id="tutNext">Next</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+//  PARAMETERS
+// ════════════════════════════════════════════════════════════════
+const P = {
+  Lx:400, Ly:300, Lz:100, base:30,
+  symmetry:5, harmonics:3, radialFreq:16, bal:0.5, spiral:0,
+  falloff:1.1, decay:0.18, warpAmp:0.10, warpScale:2.0, res:180,
+  depth:1, contrast:1, margin:0, invert:false, smooth:false, smoothR:3,
+  carrier:0.40, carrierScale:1.2, quiet:0.30, quietScale:1.0,
+  offX:0.15, offY:-0.10, zoom:1.15, shaper:0, shapeStr:0.5,
+  wedge:false, wedgeCount:6, wedgeMirror:true, wedgeOffset:0,
+  exportRes:400, blockColor:'#cdbfae',
+  seed:12345, mode:0
+};
+const DEFAULT = JSON.parse(JSON.stringify(P));
+// neutral composition = exact pre-composition behavior (used for legacy preset import)
+const NEUTRAL_COMP = {carrier:0, carrierScale:1.2, quiet:0, quietScale:1.0, offX:0, offY:0, zoom:1, shaper:0, shapeStr:0.5};
+const TOOL = {D:6, flute:25, stepover:8, feed:3000, overlay:false};
+let STATS=null;
+
+// ════════════════════════════════════════════════════════════════
+//  SEEDED NOISE
+// ════════════════════════════════════════════════════════════════
+let phaseA=[], phaseB=[];
+let carrierTerms=[];
+function mulberry32(a){return function(){a|=0;a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
+function buildPhases(){ prepareModes(); }
+function vhash(ix,iy){let h=Math.imul(ix,374761393)+Math.imul(iy,668265263)+Math.imul(P.seed|0,0x9E3779B1);h=Math.imul(h^(h>>>13),1274126177);h=h^(h>>>16);return (h>>>0)/4294967296;}
+function vnoise(x,y){
+  const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi;
+  const u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);
+  const a=vhash(xi,yi),b=vhash(xi+1,yi),c=vhash(xi,yi+1),d=vhash(xi+1,yi+1);
+  return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v;
+}
+
+// ════════════════════════════════════════════════════════════════
+//  HEIGHT FIELD  —  four resonant modes, all single-valued / machinable
+// ════════════════════════════════════════════════════════════════
+const TAU=Math.PI*2, PHI=(1+Math.sqrt(5))/2;
+let AXU=1, AXV=1, chladniModes=[], fluxPoles=[], resPhases=[];
+let sfN=[1,1.4,1.4], sfPh=[], sfMax=1;
+let phPts=null, phGrid=null, phCell=1, phGW=0, phSpace=0.1;
+const PH_R=2.4;   // phyllotaxis coverage radius in normalized coords (covers corners + offset/zoom)
+
+function prepareModes(){
+  const s=(P.seed*2654435761)>>>0;
+  const rp=mulberry32(s^0x1234), rc=mulberry32(s^0xC0FFEE), rf=mulberry32(s^0xF1A207), rr=mulberry32(s^0xACE517);
+  // coaxial phases
+  phaseA=[];phaseB=[];
+  for(let h=0;h<P.harmonics;h++){phaseA.push(rp()*TAU);phaseB.push(rp()*TAU);}
+  // chladni plate modes (free-square Ritz combination)
+  chladniModes=[];
+  const ceil=Math.max(2,P.symmetry+Math.round(P.radialFreq/4)+P.harmonics);
+  for(let k=0;k<P.harmonics;k++){
+    chladniModes.push({m:1+Math.floor(rc()*ceil), n:1+Math.floor(rc()*ceil), amp:1/Math.pow(k+1,P.falloff)});
+  }
+  // flux poles (complex-potential dipoles on a ring)
+  fluxPoles=[];
+  const pc=Math.max(2,Math.min(10,P.symmetry)), R0=0.6;
+  for(let i=0;i<pc;i++){
+    const ang=TAU*i/pc+(rf()-0.5)*0.5;
+    fluxPoles.push({x:R0*Math.cos(ang), y:R0*Math.sin(ang), q:(i%2?-1:1), beta:ang+Math.PI/2+P.spiral+(rf()-0.5)*0.6, rmin2:0.0036});
+  }
+  // resonance phases (golden quasiperiodic plane-wave stack)
+  resPhases=[];
+  const N=Math.max(2,P.symmetry);
+  for(let j=0;j<P.harmonics;j++){const row=[];for(let t=0;t<N;t++)row.push(rr()*TAU);resPhases.push(row);}
+  // superformula shape exponents (seeded) + per-harmonic angular phase; peak normalized
+  const rs=mulberry32(s^0x5F0812);
+  sfN=[0.6+rs()*2.4, 0.3+rs()*2.2, 0.3+rs()*2.2];
+  sfPh=[]; for(let h=0;h<P.harmonics;h++) sfPh.push(rs()*TAU);
+  sfMax=1e-9;
+  for(let i=0;i<256;i++) sfMax=Math.max(sfMax,superRadius(TAU*i/256,P.symmetry,sfN[0],sfN[1],sfN[2]));
+  // phyllotaxis point cloud (Vogel spiral) + spatial hash for nearest-bump lookup
+  const rq=mulberry32(s^0x9111F0);
+  const phCount=Math.max(40,Math.round(P.radialFreq*P.radialFreq));
+  const alpha=TAU/(Math.max(1,P.symmetry)+1/PHI)+(rq()-0.5)*0.003;
+  const c0=PH_R/Math.sqrt(phCount);
+  phSpace=c0; phCell=c0*1.4; phGW=Math.ceil(2*PH_R/phCell)+2;
+  phPts=new Float32Array(phCount*2);
+  phGrid=new Map();
+  for(let n=1;n<=phCount;n++){
+    const th=n*alpha, r0=c0*Math.sqrt(n);
+    const x=r0*Math.cos(th), y=r0*Math.sin(th);
+    phPts[(n-1)*2]=x; phPts[(n-1)*2+1]=y;
+    const key=Math.floor((x+PH_R)/phCell)*100003+Math.floor((y+PH_R)/phCell);
+    let cell=phGrid.get(key); if(!cell){cell=[];phGrid.set(key,cell);} cell.push(n-1);
+  }
+  // macro carrier (two seeded plane swells + one radial hollow, k from carrierScale)
+  const rw=mulberry32(s^0xCA221E), kc=P.carrierScale*2.2;
+  const a1=rw()*TAU, a2=rw()*TAU;
+  carrierTerms=[
+    {rad:false, k:kc,      cx:Math.cos(a1), cy:Math.sin(a1), ph:rw()*TAU, amp:1.0},
+    {rad:false, k:kc*0.62, cx:Math.cos(a2), cy:Math.sin(a2), ph:rw()*TAU, amp:0.7},
+    {rad:true,  k:kc*0.80, ph:rw()*TAU, amp:0.6}
+  ];
+}
+
+// --- Mode 0 : counter-rotating coaxial harmonograph -----------------
+function fCoaxial(px,py){
+  const r=Math.sqrt(px*px+py*py), a=Math.atan2(py,px); let f=0;
+  for(let h=0;h<P.harmonics;h++){
+    const kr=P.radialFreq*(h+1), m=P.symmetry*(h+1), amp=1/Math.pow(h+1,P.falloff), sp=P.spiral*kr;
+    f+=amp*(P.bal*Math.cos(kr*r+m*a+sp*r+phaseA[h])+(1-P.bal)*Math.cos(kr*r-m*a+sp*r+phaseB[h]));
+  }
+  return f*Math.exp(-P.decay*r);
+}
+// --- Mode 1 : Chladni cymatic standing waves ------------------------
+function fChladni(px,py){
+  const u=0.5+0.5*px*AXU, w=0.5+0.5*py*AXV; let s=0;
+  for(let k=0;k<chladniModes.length;k++){
+    const M=chladniModes[k];
+    const A=Math.cos(M.m*Math.PI*u)*Math.cos(M.n*Math.PI*w);
+    const B=Math.cos(M.n*Math.PI*u)*Math.cos(M.m*Math.PI*w);
+    s+=M.amp*((1-P.bal)*(A+B)+P.bal*(A-B));
+  }
+  const r=Math.sqrt(px*px+py*py);
+  return s*Math.exp(-P.decay*r);
+}
+// --- Mode 2 : magnetic flux lines (2D complex potential) ------------
+function fFlux(px,py){
+  let psi=0;
+  for(let i=0;i<fluxPoles.length;i++){
+    const P0=fluxPoles[i], dx=px-P0.x, dy=py-P0.y;
+    let rr2=dx*dx+dy*dy; if(rr2<P0.rmin2) rr2=P0.rmin2;
+    const dip=P0.q*(Math.sin(P0.beta)*dx-Math.cos(P0.beta)*dy)/rr2;   // Im(mu/(z-z0))
+    const mono=0.5*P0.q*Math.log(rr2+1e-4);
+    psi+=P.bal*dip+(1-P.bal)*mono;
+  }
+  const r=Math.sqrt(px*px+py*py);
+  for(let h=0;h<P.harmonics;h++) psi+=0.16*Math.cos(P.radialFreq*(h+1)*r)/Math.pow(h+1,P.falloff);
+  return psi*Math.exp(-P.decay*r);
+}
+// --- Mode 3 : golden-ratio quasiperiodic resonance ------------------
+function fRes(px,py){
+  const N=Math.max(2,P.symmetry); let f=0;
+  const r=Math.sqrt(px*px+py*py), tw=P.spiral*r;
+  for(let j=0;j<P.harmonics;j++){
+    const k=P.radialFreq*Math.pow(PHI,j), amp=Math.pow(PHI,-j*P.falloff);
+    for(let t=0;t<N;t++){
+      const th=TAU*t/N, dir=Math.cos(th)*px+Math.sin(th)*py;
+      f+=amp*Math.cos(k*dir+tw+P.bal*resPhases[j][t]);
+    }
+  }
+  return f*Math.exp(-P.decay*r);
+}
+
+// --- Mode 4 : superformula deformed rings ---------------------------
+function superRadius(phi,m,n1,n2,n3){
+  const t=Math.pow(Math.abs(Math.cos(m*phi/4)),n2)+Math.pow(Math.abs(Math.sin(m*phi/4)),n3);
+  return t<1e-6?1:Math.pow(t,-1/n1);
+}
+function fSuper(px,py){
+  const r=Math.sqrt(px*px+py*py), a=Math.atan2(py,px); let f=0;
+  for(let h=0;h<P.harmonics;h++){
+    const s=superRadius(a+P.spiral*r+sfPh[h],P.symmetry,sfN[0],sfN[1],sfN[2])/sfMax;
+    const shape=Math.max(0.15,1+0.9*P.bal*(s-1));   // bal = deform: rings follow the superformula outline
+    f+=Math.cos(P.radialFreq*(h+1)*r/shape+phaseA[h])/Math.pow(h+1,P.falloff);
+  }
+  return f*Math.exp(-P.decay*r);
+}
+// --- Mode 5 : phyllotaxis bump field --------------------------------
+function fPhyllo(px,py){
+  let f=0;
+  const sig=phSpace*(0.16+0.42*P.bal), inv=1/(2*sig*sig);
+  const gx=Math.floor((px+PH_R)/phCell), gy=Math.floor((py+PH_R)/phCell);
+  for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){
+    const cell=phGrid.get((gx+dx)*100003+(gy+dy)); if(!cell) continue;
+    for(let q=0;q<cell.length;q++){
+      const i=cell[q]*2, ddx=px-phPts[i], ddy=py-phPts[i+1];
+      f+=Math.exp(-(ddx*ddx+ddy*ddy)*inv);
+    }
+  }
+  const r=Math.sqrt(px*px+py*py);
+  for(let h=1;h<P.harmonics;h++) f+=0.12*Math.cos(18*(h+1)*r+phaseA[h])/Math.pow(h+1,P.falloff);
+  return f*Math.exp(-P.decay*r);
+}
+
+// --- Mode 6 : moiré — two detuned counter-rotated gratings ----------
+function moireBase(px,py,rot,scl){
+  const N=Math.max(2,P.symmetry), c=Math.cos(rot), s=Math.sin(rot);
+  const x=(c*px-s*py)*scl, y=(s*px+c*py)*scl;
+  let f=0;
+  for(let h=0;h<P.harmonics;h++){
+    const k=P.radialFreq*(h+1), amp=1/Math.pow(h+1,P.falloff);
+    for(let t=0;t<N;t++){
+      const th=TAU*t/N;
+      f+=amp*Math.cos(k*(Math.cos(th)*x+Math.sin(th)*y)+phaseA[h]);
+    }
+  }
+  return f/N;
+}
+function fMoire(px,py){
+  const d=0.5*(0.03+0.22*P.bal), scl=1+P.spiral*0.08;
+  const b1=moireBase(px,py,+d,scl), b2=moireBase(px,py,-d,1/scl);
+  const r=Math.sqrt(px*px+py*py);
+  return (b1+b2+0.6*b1*b2)*Math.exp(-P.decay*r);
+}
+
+function fieldRaw(px,py){
+  // wedge fold BEFORE warp so every copy (and its warp detail) is identical
+  if(P.wedge){
+    const r=Math.sqrt(px*px+py*py);
+    if(r>1e-9){
+      const span=TAU/Math.max(2,Math.round(P.wedgeCount)), off=P.wedgeOffset*Math.PI/180;
+      let t=Math.atan2(py,px)-off; t=((t%span)+span)%span;
+      if(P.wedgeMirror && t>span/2) t=span-t;
+      const a=t+off; px=r*Math.cos(a); py=r*Math.sin(a);
+    }
+  }
+  if(P.warpAmp>0){
+    const wx=(vnoise(px*P.warpScale,py*P.warpScale)-0.5)*2;
+    const wy=(vnoise(px*P.warpScale+5.2,py*P.warpScale+9.3)-0.5)*2;
+    px+=P.warpAmp*wx; py+=P.warpAmp*wy;
+  }
+  switch(P.mode){
+    case 1: return fChladni(px,py);
+    case 2: return fFlux(px,py);
+    case 3: return fRes(px,py);
+    case 4: return fSuper(px,py);
+    case 5: return fPhyllo(px,py);
+    case 6: return fMoire(px,py);
+    default: return fCoaxial(px,py);
+  }
+}
+
+// ── Composition layer ───────────────────────────────────────────
+// Macro carrier: low-frequency swell in BLOCK coords (not cropped/offset),
+// so the big form belongs to the block while the pattern window slides over it.
+function fCarrier(px,py){
+  let s=0;
+  for(let i=0;i<carrierTerms.length;i++){
+    const T=carrierTerms[i];
+    if(T.rad) s+=T.amp*Math.cos(T.k*Math.sqrt(px*px+py*py)+T.ph);
+    else      s+=T.amp*Math.cos(T.k*(T.cx*px+T.cy*py)+T.ph);
+  }
+  return s;
+}
+function sstep(a,b,x){const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);}
+// Quiet mask 0..1: ~P.quiet fraction of area suppressed, soft edges.
+function quietMask(px,py){
+  if(P.quiet<=0) return 1;
+  const n=vnoise(px*P.quietScale+17.3, py*P.quietScale+29.1);
+  return sstep(P.quiet-0.15, P.quiet+0.15, n);
+}
+// Monotonic height remap => still single-valued, still 3-axis machinable.
+// Plateau keeps crests at 1, cove keeps floors at 0, so full depth is preserved.
+function shapeGrid(h){
+  const s=P.shapeStr;
+  if(P.shaper===0||s<=0) return;
+  if(P.shaper===1){          // plateau: soft-clip the top band into flat planes
+    const T=1-0.45*s;
+    for(let k=0;k<h.length;k++) h[k]=Math.min(h[k],T)/T;
+  } else if(P.shaper===2){   // terrace: 5 levels, strength = step sharpness
+    const L=5, w=Math.max(0.04,0.5-0.42*s);
+    for(let k=0;k<h.length;k++){
+      const t=Math.min(h[k],1-1e-6)*L, i=Math.floor(t), f=t-i;
+      h[k]=(i+sstep(0.5-w,0.5+w,f))/L;
+    }
+  } else if(P.shaper===3){   // cove: soft-clip the bottom band into flat floors
+    const B=0.45*s;
+    for(let k=0;k<h.length;k++) h[k]=(Math.max(h[k],B)-B)/(1-B);
+  }
+}
+function normalize01(a){
+  let mn=Infinity,mx=-Infinity;
+  for(let k=0;k<a.length;k++){const v=a[k];if(v<mn)mn=v;if(v>mx)mx=v;}
+  const sp=(mx-mn)||1;
+  for(let k=0;k<a.length;k++)a[k]=(a[k]-mn)/sp;
+}
+// Percentile normalization: clamp to [lo,hi] percentiles before scaling, so a
+// single field spike (e.g. a Flux pole) can't set the span and flatten the rest.
+// Values outside the band are clamped, not discarded, so the surface stays full-depth.
+function normalizePct(a,lo,hi){
+  const s=Float32Array.from(a); s.sort();
+  const n=s.length;
+  let mn=s[Math.max(0,Math.floor((lo??0.01)*(n-1)))];
+  let mx=s[Math.min(n-1,Math.ceil((hi??0.99)*(n-1)))];
+  if(mx-mn<1e-9){mn=s[0];mx=s[n-1];}          // degenerate band → fall back to min/max
+  const sp=(mx-mn)||1;
+  for(let k=0;k<a.length;k++){let v=(a[k]-mn)/sp; a[k]=v<0?0:v>1?1:v;}
+}
+
+// separable Gaussian blur over a height grid (edge-clamped)
+function gaussianBlur(a,w,h,sigma){
+  if(sigma<=0) return;
+  const rad=Math.max(1,Math.ceil(sigma*3)), k=new Float32Array(rad*2+1);
+  let sum=0;
+  for(let i=-rad;i<=rad;i++){const v=Math.exp(-(i*i)/(2*sigma*sigma)); k[i+rad]=v; sum+=v;}
+  for(let i=0;i<k.length;i++) k[i]/=sum;
+  const tmp=new Float32Array(a.length);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){let acc=0;for(let t=-rad;t<=rad;t++){let xx=x+t;xx=xx<0?0:xx>=w?w-1:xx;acc+=a[y*w+xx]*k[t+rad];}tmp[y*w+x]=acc;}
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){let acc=0;for(let t=-rad;t<=rad;t++){let yy=y+t;yy=yy<0?0:yy>=h?h-1:yy;acc+=tmp[yy*w+x]*k[t+rad];}a[y*w+x]=acc;}
+}
+
+// ════════════════════════════════════════════════════════════════
+//  SOLID BUILDER  (watertight: top grid + bottom grid + 4 walls)
+// ════════════════════════════════════════════════════════════════
+let GEO=null;  // {positions, index, nx, ny, VW, VH, relief, base, Lx, Ly, finalH}
+
+// ── Pure height pipeline ────────────────────────────────────────
+// Produces the final 0..1 height grid for a given resolution. Identical
+// math for preview, verification and export, so all three agree by
+// construction. Assumes prepareModes() has run for the current P.
+function sampleHeightGrid(res){
+  const Lx=P.Lx, Ly=P.Ly;
+  const nx=Math.max(8, Math.round(res));
+  const ny=Math.max(8, Math.round(res*Ly/Lx));
+  const VW=nx+1, VH=ny+1;
+  const minDim=Math.min(Lx,Ly);
+  AXU=minDim/Lx; AXV=minDim/Ly;
+  const h=new Float32Array(VW*VH), car=new Float32Array(VW*VH), msk=new Float32Array(VW*VH);
+  const zoomInv=1/Math.max(0.1,P.zoom), useCar=P.carrier>0;
+  for(let j=0;j<VH;j++){
+    for(let i=0;i<VW;i++){
+      const wx=i/nx*Lx, wy=j/ny*Ly;
+      const px=(wx-Lx/2)/(minDim/2), py=(wy-Ly/2)/(minDim/2);
+      const idx=j*VW+i;
+      h[idx]=fieldRaw((px-P.offX)*zoomInv,(py-P.offY)*zoomInv);
+      car[idx]=useCar?fCarrier(px,py):0;
+      msk[idx]=quietMask(px,py);
+    }
+  }
+  normalizePct(h,0.01,0.99);                 // spike-robust (item 2)
+  if(useCar) normalize01(car);               // carrier is bounded cosines, no spikes
+  for(let k=0;k<h.length;k++) h[k]=P.carrier*car[k]+(1-P.carrier)*(0.5+(h[k]-0.5)*msk[k]);
+  normalize01(h);
+  shapeGrid(h);
+  if(P.smooth && P.smoothR>0){
+    const cell=(Lx/nx + Ly/ny)/2;
+    gaussianBlur(h, VW, VH, P.smoothR/cell);
+    normalize01(h);
+  }
+  // per-vertex finishing: invert, contrast, edge margin → final 0..1 grid
+  const finalH=new Float32Array(VW*VH);
+  for(let j=0;j<VH;j++)for(let i=0;i<VW;i++){
+    const idx=j*VW+i, wx=i/nx*Lx, wy=j/ny*Ly;
+    let hN=h[idx];
+    if(P.invert) hN=1-hN;
+    if(P.contrast!==1) hN=Math.pow(hN,P.contrast);
+    if(P.margin>0){
+      const de=Math.min(wx,Lx-wx,wy,Ly-wy);
+      let ef=Math.max(0,Math.min(1,de/P.margin)); ef=ef*ef*(3-2*ef);
+      hN*=ef;
+    }
+    finalH[idx]=hN;
+  }
+  return {finalH, nx, ny, VW, VH};
+}
+
+// ── Watertight solid ────────────────────────────────────────────
+// Top: full height grid. Bottom: perimeter ring + one centre vertex,
+// fanned into a flat cap (item 7) — O(n) triangles instead of O(n²),
+// fully manifold (no T-junctions). Walls join top edge to bottom ring.
+function buildSolid(finalH, res){
+  const Lx=P.Lx, Ly=P.Ly, base=P.base;
+  const relief=Math.max(0.1, P.Lz-P.base)*P.depth;
+  const nx=Math.max(8, Math.round(res));
+  const ny=Math.max(8, Math.round(res*Ly/Lx));
+  const VW=nx+1, VH=ny+1, nTopV=VW*VH;
+
+  // ordered perimeter ring (CCW seen from +z)
+  const ringIJ=[];
+  for(let i=0;i<=nx;i++) ringIJ.push([i,0]);
+  for(let j=1;j<=ny;j++) ringIJ.push([nx,j]);
+  for(let i=nx-1;i>=0;i--) ringIJ.push([i,ny]);
+  for(let j=ny-1;j>=1;j--) ringIJ.push([0,j]);
+  const ringLen=ringIJ.length;              // 2*nx+2*ny
+  const ringMap=new Map();
+  ringIJ.forEach(([i,j],r)=>ringMap.set(i*100003+j, nTopV+r));
+  const centreIdx=nTopV+ringLen;
+
+  const positions=new Float32Array((nTopV+ringLen+1)*3);
+  // top grid
+  for(let j=0;j<VH;j++)for(let i=0;i<VW;i++){
+    const idx=j*VW+i, t=idx*3;
+    positions[t]=i/nx*Lx; positions[t+1]=j/ny*Ly; positions[t+2]=base+finalH[idx]*relief;
+  }
+  // bottom ring
+  ringIJ.forEach(([i,j],r)=>{const b=(nTopV+r)*3; positions[b]=i/nx*Lx; positions[b+1]=j/ny*Ly; positions[b+2]=0;});
+  // bottom centre
+  positions[centreIdx*3]=Lx/2; positions[centreIdx*3+1]=Ly/2; positions[centreIdx*3+2]=0;
+
+  const tIdx=(i,j)=>j*VW+i;
+  const bIdx=(i,j)=>ringMap.get(i*100003+j);
+
+  const idxArr=[];
+  // top faces
+  for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){
+    const a=tIdx(i,j),b=tIdx(i+1,j),c=tIdx(i+1,j+1),d=tIdx(i,j+1);
+    idxArr.push(a,b,c, a,c,d);
+  }
+  // bottom fan (centre → ring), wound for -z outward normal
+  for(let r=0;r<ringLen;r++){
+    const a=nTopV+r, b=nTopV+((r+1)%ringLen);
+    idxArr.push(centreIdx,b,a);
+  }
+  const wallStart=idxArr.length;
+  for(let i=0;i<nx;i++) idxArr.push(tIdx(i,0),tIdx(i+1,0),bIdx(i+1,0), tIdx(i,0),bIdx(i+1,0),bIdx(i,0));
+  for(let i=0;i<nx;i++) idxArr.push(tIdx(i,ny),bIdx(i,ny),bIdx(i+1,ny), tIdx(i,ny),bIdx(i+1,ny),tIdx(i+1,ny));
+  for(let j=0;j<ny;j++) idxArr.push(tIdx(0,j),bIdx(0,j),bIdx(0,j+1), tIdx(0,j),bIdx(0,j+1),tIdx(0,j+1));
+  for(let j=0;j<ny;j++) idxArr.push(tIdx(nx,j),tIdx(nx,j+1),bIdx(nx,j+1), tIdx(nx,j),bIdx(nx,j+1),bIdx(nx,j));
+
+  // orient ONLY perimeter walls outward (top/bottom windings already correct)
+  const cx=Lx/2, cy=Ly/2, cz=base*0.5;
+  for(let k=wallStart;k<idxArr.length;k+=3){
+    const ia=idxArr[k]*3,ib=idxArr[k+1]*3,ic=idxArr[k+2]*3;
+    const ax=positions[ia],ay=positions[ia+1],az=positions[ia+2];
+    const bx=positions[ib],by=positions[ib+1],bz=positions[ib+2];
+    const dx=positions[ic],dy=positions[ic+1],dz=positions[ic+2];
+    const ux=bx-ax,uy=by-ay,uz=bz-az, vx=dx-ax,vy=dy-ay,vz=dz-az;
+    const nxn=uy*vz-uz*vy, nyn=uz*vx-ux*vz, nzn=ux*vy-uy*vx;
+    const gx=(ax+bx+dx)/3-cx, gy=(ay+by+dy)/3-cy, gz=(az+bz+dz)/3-cz;
+    if(nxn*gx+nyn*gy+nzn*gz<0){const tmp=idxArr[k+1];idxArr[k+1]=idxArr[k+2];idxArr[k+2]=tmp;}
+  }
+  return {positions, index:new Uint32Array(idxArr), nx, ny, VW, VH, relief, base, Lx, Ly, finalH};
+}
+
+function buildModel(){
+  prepareModes();
+  const grid=sampleHeightGrid(P.res);
+  GEO=buildSolid(grid.finalH, P.res);
+  updateThreeMesh();
+  updateReadouts();
+  previewAnalyze();
+}
+// live overlay + provisional verdict from the current preview mesh
+function previewAnalyze(){
+  if(!GEO) return;
+  const a=analyzeGrid(GEO.finalH, GEO.nx, GEO.ny, GEO.VW, GEO.VH, GEO.relief, true);
+  STATS=a.stats; STATS.res=P.res; STATS.verified=false;
+  const full=new Float32Array(GEO.positions.length);
+  for(let k=0;k<full.length;k+=3){full[k]=0.12;full[k+1]=0.14;full[k+2]=0.17;}
+  full.set(a.colors,0);
+  GEO.colors=full;
+  setOverlay(TOOL.overlay); renderMStats(); updateChips();
+  scheduleVerify();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  THREE.JS SCENE
+// ════════════════════════════════════════════════════════════════
+let scene,camera,renderer,mesh,stockBox,target,keyLight;
+let theta=-0.9, phi=1.0, radius=620, framed=false;
+function initThree(){
+  const canvas=document.getElementById('view');
+  renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.outputEncoding=THREE.sRGBEncoding;                 // item 3: correct colour output
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;           // filmic rolloff, no clipping
+  renderer.toneMappingExposure=1.05;
+  renderer.shadowMap.enabled=true;                            // item 4: self-shadowing
+  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x0c0d10);
+  target=new THREE.Vector3(0,0,0);
+  camera=new THREE.PerspectiveCamera(42,1,1,8000);
+
+  scene.add(new THREE.AmbientLight(0xffffff,0.32));           // lowered so shadows read
+  keyLight=new THREE.DirectionalLight(0xfff3e6,0.95); keyLight.position.set(0.6,0.4,1); scene.add(keyLight);
+  keyLight.castShadow=true;
+  keyLight.shadow.mapSize.set(2048,2048);
+  keyLight.shadow.bias=-0.0004;
+  const fill=new THREE.DirectionalLight(0x6a9bcc,0.42); fill.position.set(-0.8,0.5,-0.4); scene.add(fill);
+  const rim=new THREE.DirectionalLight(0xffffff,0.3); rim.position.set(0,-1,0.3); scene.add(rim);
+
+  const mat=new THREE.MeshStandardMaterial({color:P.blockColor,roughness:0.82,metalness:0.06,flatShading:false,side:THREE.DoubleSide});
+  mat.shadowSide=THREE.BackSide;   // watertight mesh: back-face shadow depth avoids acne on DoubleSide
+  mesh=new THREE.Mesh(new THREE.BufferGeometry(),mat);
+  mesh.castShadow=true; mesh.receiveShadow=true;               // ridges shadow valleys
+  scene.add(mesh);
+
+  // orbit
+  let down=false,lx=0,ly=0;
+  canvas.addEventListener('pointerdown',e=>{down=true;lx=e.clientX;ly=e.clientY;});
+  window.addEventListener('pointerup',()=>down=false);
+  window.addEventListener('pointermove',e=>{if(!down)return;theta-=(e.clientX-lx)*0.006;phi-=(e.clientY-ly)*0.006;phi=Math.max(0.12,Math.min(Math.PI-0.12,phi));lx=e.clientX;ly=e.clientY;});
+  canvas.addEventListener('wheel',e=>{e.preventDefault();radius*=(1+Math.sign(e.deltaY)*0.08);radius=Math.max(120,Math.min(4000,radius));},{passive:false});
+
+  window.addEventListener('resize',onResize); onResize(); animate();
+}
+function onResize(){const m=document.querySelector('.main');camera.aspect=m.clientWidth/m.clientHeight;camera.updateProjectionMatrix();renderer.setSize(m.clientWidth,m.clientHeight);}
+function animate(){requestAnimationFrame(animate);camera.position.set(target.x+radius*Math.sin(phi)*Math.cos(theta),target.y+radius*Math.sin(phi)*Math.sin(theta),target.z+radius*Math.cos(phi));camera.up.set(0,0,1);camera.lookAt(target);renderer.render(scene,camera);}
+
+function updateThreeMesh(){
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(GEO.positions,3));
+  g.setIndex(new THREE.BufferAttribute(GEO.index,1));
+  g.computeVertexNormals();
+  g.computeBoundingSphere();
+  const old=mesh.geometry; mesh.geometry=g; if(old) old.dispose();
+  mesh.material.vertexColors=false; mesh.material.color.set(P.blockColor); mesh.material.needsUpdate=true;
+  // centre the mesh for viewing while keeping export coords intact
+  mesh.position.set(-GEO.Lx/2,-GEO.Ly/2,-(GEO.base+GEO.relief*0.5));
+  // fit the key light's shadow frustum to the block
+  const S=Math.max(GEO.Lx,GEO.Ly);
+  keyLight.position.set(0.6,0.4,1).normalize().multiplyScalar(S*1.6);
+  const sc=keyLight.shadow.camera, half=S*0.72;
+  sc.left=-half; sc.right=half; sc.top=half; sc.bottom=-half; sc.near=S*0.15; sc.far=S*4;
+  sc.updateProjectionMatrix();
+  if(stockBox){scene.remove(stockBox);stockBox.geometry.dispose();stockBox.material.dispose();}
+  const boxG=new THREE.BoxGeometry(GEO.Lx,GEO.Ly,P.Lz);
+  stockBox=new THREE.LineSegments(new THREE.EdgesGeometry(boxG),new THREE.LineBasicMaterial({color:0x3a3f48}));
+  stockBox.position.set(0,0,P.Lz/2-(GEO.base+GEO.relief*0.5));
+  scene.add(stockBox);
+  if(!framed){ radius=Math.max(GEO.Lx,GEO.Ly,P.Lz)*1.4; framed=true; }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  READOUTS  (ridge spacing, floor check, triangle budget)
+// ════════════════════════════════════════════════════════════════
+function updateReadouts(){
+  const relief=GEO.relief;
+  const minDim=Math.min(P.Lx,P.Ly);
+  const ridge=(minDim*Math.PI)/(2*P.radialFreq);
+  const previewTris=GEO.index.length/3;
+  // export estimate at P.exportRes: top 2·nx·ny + bottom fan 2(nx+ny) + walls 4(nx+ny)
+  const enx=Math.max(8,Math.round(P.exportRes)), eny=Math.max(8,Math.round(P.exportRes*P.Ly/P.Lx));
+  const exTris=2*enx*eny + 2*(enx+eny) + 4*(enx+eny);
+  const exMB=(84+exTris*50)/1048576;
+  const floorOk=P.base>=3, reliefOk=relief>3;
+  const cnc=document.getElementById('cnc');
+  cnc.innerHTML=
+    `Relief depth: <b>${relief.toFixed(1)} mm</b><br>`+
+    `Retained floor: <b>${P.base.toFixed(0)} mm</b> ${floorOk?'<span class=ok>ok</span>':'<span class=warn>thin</span>'}<br>`+
+    `Detail scale ≈ <b>${ridge.toFixed(1)} mm</b><br>`+
+    `Preview grid: <b>${GEO.nx}×${GEO.ny}</b> · cell ≈ <b>${(P.Lx/GEO.nx).toFixed(2)} mm</b><br>`+
+    `Export: <b>${enx}×${eny}</b> · <b>${exTris.toLocaleString()}</b> tris · STL ≈ <b>${exMB.toFixed(1)} MB</b><br>`+
+    (P.exportRes<P.res?'<span class=warn>export res below preview res: STL will be coarser than the preview</span><br>':'')+
+    (reliefOk?'':'<span class=warn>relief &lt; 3 mm: raise Z or lower floor</span>');
+  document.getElementById('hud').innerHTML=
+    `<b>${P.Lx} × ${P.Ly} × ${P.Lz}</b> mm<br>relief <b>${relief.toFixed(0)}</b> · floor <b>${P.base}</b> · sym <b>${P.symmetry}</b>`;
+}
+
+// ════════════════════════════════════════════════════════════════
+//  MACHINABILITY  (slope + principal curvature vs ballnose radius)
+// ════════════════════════════════════════════════════════════════
+// Separable square max-dilation (two passes, O(n·r)). Used for the flute
+// reach check: local terrain max within the tool's footprint.
+function dilateMax(a,w,h,r){
+  if(r<=0) return a;
+  const tmp=new Float32Array(a.length), out=new Float32Array(a.length);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){let m=-Infinity;for(let t=-r;t<=r;t++){let xx=x+t;xx=xx<0?0:xx>=w?w-1:xx;const v=a[y*w+xx];if(v>m)m=v;}tmp[y*w+x]=m;}
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){let m=-Infinity;for(let t=-r;t<=r;t++){let yy=y+t;yy=yy<0?0:yy>=h?h-1:yy;const v=tmp[yy*w+x];if(v>m)m=v;}out[y*w+x]=m;}
+  return out;
+}
+// Pure machinability analysis on a height grid (0..1) at ITS OWN resolution.
+// Returns stats; optionally returns per-top-vertex colours for the overlay.
+// Curvature/slope use real mm via z = finalH*relief, so a finer grid resolves
+// tighter curvature — which is why the authoritative check runs at export res.
+function analyzeGrid(finalH, nx, ny, VW, VH, relief, wantColors){
+  const dx=P.Lx/nx, dy=P.Ly/ny, rTool=TOOL.D/2, warn=70*Math.PI/180;
+  // z in real mm, precomputed once
+  const z=new Float32Array(VW*VH);
+  for(let k=0;k<z.length;k++) z[k]=finalH[k]*relief;
+  // reach window = tool footprint in cells, derived from mm — NOT capped in
+  // cells (a cell cap silently shrank the window at fine grids / large tools)
+  const win=Math.max(1,Math.round(TOOL.D/Math.max(0.05,dx)));
+  const localMax=dilateMax(z,VW,VH,win);
+  const Z=(i,j)=>z[j*VW+i];
+  const colors=wantColors?new Float32Array(VW*VH*3):null;
+  let maxSlope=0, steepN=0, gougeN=0, reachN=0, maxKappa=0; const topN=VW*VH;
+  for(let j=0;j<VH;j++)for(let i=0;i<VW;i++){
+    const ip=Math.min(i+1,nx),im=Math.max(i-1,0),jp=Math.min(j+1,ny),jm=Math.max(j-1,0);
+    const sx=((ip-im)||1)*dx, sy=((jp-jm)||1)*dy;
+    const fx=(Z(ip,j)-Z(im,j))/sx, fy=(Z(i,jp)-Z(i,jm))/sy;
+    const fxx=(Z(ip,j)-2*Z(i,j)+Z(im,j))/(dx*dx);
+    const fyy=(Z(i,jp)-2*Z(i,j)+Z(i,jm))/(dy*dy);
+    const fxy=(Z(ip,jp)-Z(ip,jm)-Z(im,jp)+Z(im,jm))/(sx*sy);
+    const slope=Math.atan(Math.hypot(fx,fy)); if(slope>maxSlope)maxSlope=slope;
+    const den=Math.sqrt(1+fx*fx+fy*fy);
+    const E=1+fx*fx,F=fx*fy,G=1+fy*fy, L=fxx/den,M=fxy/den,N=fyy/den, d2=(E*G-F*F)||1e-9;
+    const Hc=(E*N-2*F*M+G*L)/(2*d2), Kc=(L*N-M*M)/d2, disc=Math.max(0,Hc*Hc-Kc);
+    const kmax=Math.max(Hc+Math.sqrt(disc),Hc-Math.sqrt(disc));
+    if(kmax>maxKappa)maxKappa=kmax;
+    const gouge=(kmax>0 && (1/kmax)<rTool);
+    const idx=j*VW+i;
+    const reach=((localMax[idx]-z[idx])>TOOL.flute);
+    if(gouge)gougeN++; else if(reach)reachN++; else if(slope>warn)steepN++;
+    if(colors){
+      let r,g,b;
+      if(gouge){ r=0.75;g=0.22;b=0.16; }
+      else if(reach){ r=0.56;g=0.43;b=0.70; }
+      else if(slope>warn){ r=0.85;g=0.55;b=0.20; }
+      else { const t=Math.min(1,slope/warn); r=0.30+0.45*t; g=0.55-0.05*t; b=0.25-0.05*t; }
+      const o=idx*3; colors[o]=r;colors[o+1]=g;colors[o+2]=b;
+    }
+  }
+  const stepMM=TOOL.D*TOOL.stepover/100;
+  const stats={
+    maxSlope:maxSlope*180/Math.PI,
+    steepPct:100*steepN/topN, gougePct:100*gougeN/topN, reachPct:100*reachN/topN,
+    minConcaveR: maxKappa>0?1/maxKappa:Infinity,
+    scallop: stepMM*stepMM/(8*rTool), stepMM,
+    passes: Math.ceil(P.Lx/stepMM), pathLen: Math.ceil(P.Lx/stepMM)*P.Ly/1000,
+    flute:TOOL.flute, reliefDepth:relief
+  };
+  return {stats, colors};
+}
+// Authoritative verdict at export resolution (item 1). Debounced so live
+// sculpting stays smooth; the coloured overlay you see is the preview-res
+// sketch, but the LED and numbers describe the resolution you will export.
+let verifyT=null, verifyPending=false;
+function scheduleVerify(){ clearTimeout(verifyT); verifyPending=true; updateChips(); verifyT=setTimeout(verifyExport,350); }
+function verifyExport(grid){
+  clearTimeout(verifyT);
+  if(!grid){ prepareModes(); grid=sampleHeightGrid(P.exportRes); }
+  const relief=Math.max(0.1,P.Lz-P.base)*P.depth;
+  const a=analyzeGrid(grid.finalH, grid.nx, grid.ny, grid.VW, grid.VH, relief, false);
+  STATS=a.stats; STATS.res=P.exportRes; STATS.verified=true;
+  verifyPending=false;
+  renderMStats(); updateChips();
+  return grid;
+}
+function setOverlay(on){
+  if(!mesh||!GEO) return;
+  const g=mesh.geometry;
+  if(on && GEO.colors){
+    g.setAttribute('color',new THREE.BufferAttribute(GEO.colors,3));
+    mesh.material.vertexColors=true; mesh.material.color.set(0xffffff);
+  } else {
+    if(g.getAttribute('color')) g.deleteAttribute('color');
+    mesh.material.vertexColors=false; mesh.material.color.set(P.blockColor);
+  }
+  mesh.material.needsUpdate=true;
+}
+function renderMStats(){
+  if(!STATS) return;
+  const s=STATS, el=document.getElementById('mstats');
+  const cr=s.minConcaveR===Infinity?'none':s.minConcaveR.toFixed(1)+' mm';
+  const time=TOOL.feed>0?(s.pathLen*1000/TOOL.feed):0;
+  const badge=s.verified
+    ? `<span class="ok">✓ verified @ ${s.res} (export res)</span>`
+    : `<span class="warn">provisional @ ${s.res}${verifyPending?' · checking @'+P.exportRes+'…':''}</span>`;
+  el.innerHTML=
+    `${badge}<br>`+
+    `Stepover: <b>${s.stepMM.toFixed(2)} mm</b><br>`+
+    `Max slope: <b>${s.maxSlope.toFixed(0)}°</b> · steep &gt;70°: <b>${s.steepPct.toFixed(1)}%</b><br>`+
+    `Tightest concave R: <b>${cr}</b> vs tool R <b>${(TOOL.D/2).toFixed(1)} mm</b><br>`+
+    `Tool too large: <b class="${s.gougePct>0.1?'warn':'ok'}">${s.gougePct.toFixed(1)}%</b><br>`+
+    `Flute reach: <b class="${s.reachPct>0.1?'warn':'ok'}">${s.reachPct.toFixed(1)}%</b> short (flute ${s.flute} mm vs relief ${s.reliefDepth.toFixed(0)} mm)<br>`+
+    `Scallop @ stepover: <b>${(s.scallop*1000).toFixed(0)} µm</b><br>`+
+    `Finish: <b>${s.passes}</b> passes · <b>${s.pathLen.toFixed(1)} m</b>`+(time?` ≈ <b>${time.toFixed(0)} min</b>`:'')+`<br>`+
+    `<span style="color:#7e9b5a">█</span> ok &nbsp;<span style="color:#d9a757">█</span> steep &nbsp;<span style="color:#8e6fb3">█</span> flute short &nbsp;<span style="color:#c0392b">█</span> tool too large`;
+}
+const MODENAME={0:'Coaxial',1:'Chladni',2:'Flux',3:'Resonance',4:'Superformula',5:'Phyllotaxis',6:'Moiré'};
+function updateChips(){
+  const sm=document.getElementById('st-mode'); if(sm)sm.innerHTML='mode <b>'+MODENAME[P.mode]+'</b>';
+  const ss=document.getElementById('st-stock'); if(ss)ss.innerHTML='<b>'+P.Lx+'×'+P.Ly+'×'+P.Lz+'</b>';
+  const led=document.getElementById('led-mach'), st=document.getElementById('st-mach');
+  if(STATS){
+    const g=STATS.gougePct, rc=STATS.reachPct||0, bad=g+rc;
+    if(led){led.className='led '+((g>2||rc>2)?'bad':(g>0.1||rc>0.1)?'warn':'ok');led.title=(STATS.verified?`verified @${STATS.res}`:`provisional @${STATS.res}`)+` · tool too large ${g.toFixed(1)}% · flute short ${rc.toFixed(1)}%`;}
+    if(st)st.innerHTML=(verifyPending?'checking… ':'')+(bad<0.1?'<b>machinable</b>':'<b>'+bad.toFixed(0)+'%</b> flagged');
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  EXPORT
+// ════════════════════════════════════════════════════════════════
+function exportSTL(){
+  busy(true);
+  setTimeout(()=>{
+    prepareModes();
+    const grid=sampleHeightGrid(P.exportRes);
+    verifyExport(grid);                              // LED reflects what we ship, no resample
+    const G=buildSolid(grid.finalH, P.exportRes);
+    const pos=G.positions, idx=G.index, n=idx.length/3;
+    const buf=new ArrayBuffer(84+n*50), dv=new DataView(buf), bytes=new Uint8Array(buf);
+    // self-documenting 80-byte header (item 8). Must NOT start with "solid".
+    const fN=v=>(+v).toFixed(2).replace(/\.?0+$/,'');
+    const hdr=`FFM mode=${P.mode} seed=${P.seed} sym=${P.symmetry} h=${P.harmonics} rf=${fN(P.radialFreq)} car=${fN(P.carrier)} q=${fN(P.quiet)} z=${fN(P.zoom)} sh=${P.shaper} res=${P.exportRes}`;
+    for(let i=0;i<80;i++) bytes[i]=i<hdr.length?hdr.charCodeAt(i)&0x7f:0x20;
+    dv.setUint32(80,n,true);
+    let o=84;
+    for(let k=0;k<idx.length;k+=3){
+      const ia=idx[k]*3,ib=idx[k+1]*3,ic=idx[k+2]*3;
+      const ax=pos[ia],ay=pos[ia+1],az=pos[ia+2];
+      const bx=pos[ib],by=pos[ib+1],bz=pos[ib+2];
+      const cx=pos[ic],cy=pos[ic+1],cz=pos[ic+2];
+      let nx=(by-ay)*(cz-az)-(bz-az)*(cy-ay);
+      let ny=(bz-az)*(cx-ax)-(bx-ax)*(cz-az);
+      let nz=(bx-ax)*(cy-ay)-(by-ay)*(cx-ax);
+      const L=Math.hypot(nx,ny,nz)||1; nx/=L;ny/=L;nz/=L;
+      dv.setFloat32(o,nx,true);dv.setFloat32(o+4,ny,true);dv.setFloat32(o+8,nz,true);
+      dv.setFloat32(o+12,ax,true);dv.setFloat32(o+16,ay,true);dv.setFloat32(o+20,az,true);
+      dv.setFloat32(o+24,bx,true);dv.setFloat32(o+28,by,true);dv.setFloat32(o+32,bz,true);
+      dv.setFloat32(o+36,cx,true);dv.setFloat32(o+40,cy,true);dv.setFloat32(o+44,cz,true);
+      dv.setUint16(o+48,0,true); o+=50;
+    }
+    download(new Blob([buf],{type:'application/octet-stream'}),`fieldform_${P.Lx}x${P.Ly}x${P.Lz}_s${P.seed}.stl`);
+    setTimeout(savePreset,400);                      // reproducible sidecar (item 8)
+    busy(false); flash('STL exported');
+  },30);
+}
+function exportPNG(){
+  busy(true);
+  setTimeout(()=>{
+    prepareModes();
+    const grid=sampleHeightGrid(P.exportRes);        // match the STL resolution (item 1)
+    const W=grid.VW,H=grid.VH,c=document.createElement('canvas');c.width=W;c.height=H;
+    const ctx=c.getContext('2d'),img=ctx.createImageData(W,H);
+    for(let j=0;j<H;j++)for(let i=0;i<W;i++){
+      const g=Math.round(grid.finalH[j*W+i]*255), o=((H-1-j)*W+i)*4;
+      img.data[o]=g;img.data[o+1]=g;img.data[o+2]=g;img.data[o+3]=255;
+    }
+    ctx.putImageData(img,0,0);
+    c.toBlob(b=>{download(b,`fieldform_heightmap_${P.Lx}x${P.Ly}_s${P.seed}.png`);busy(false);flash('heightmap exported');});
+  },30);
+}
+// transient confirmation in the status bar (ported from CoaxialStudio)
+let flashTimer=null;
+function flash(msg){
+  const el=document.getElementById('st-mode'); if(!el) return;
+  el.innerHTML='<b>'+msg+'</b>';
+  clearTimeout(flashTimer); flashTimer=setTimeout(updateChips,1500);
+}
+function download(blob,name){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),2000);}
+function busy(on){document.getElementById('busy').style.display=on?'flex':'none';}
+
+// ════════════════════════════════════════════════════════════════
+//  UI WIRING
+// ════════════════════════════════════════════════════════════════
+const SLIDERS=['base','symmetry','harmonics','radialFreq','bal','spiral','falloff','decay','warpAmp','warpScale','res','depth','contrast','margin','smoothR','carrier','carrierScale','quiet','quietScale','offX','offY','zoom','shapeStr','wedgeCount','wedgeOffset'];
+const FMT={base:v=>v+' mm',bal:v=>v.toFixed(2),spiral:v=>v.toFixed(2),falloff:v=>v.toFixed(2),decay:v=>v.toFixed(2),warpAmp:v=>v.toFixed(2),warpScale:v=>v.toFixed(1),radialFreq:v=>v.toFixed(1),depth:v=>v.toFixed(2)+'×',contrast:v=>v.toFixed(2),margin:v=>v+' mm',smoothR:v=>v+' mm',carrier:v=>v.toFixed(2),carrierScale:v=>v.toFixed(1),quiet:v=>v.toFixed(2),quietScale:v=>v.toFixed(1),offX:v=>v.toFixed(2),offY:v=>v.toFixed(2),zoom:v=>v.toFixed(2)+'×',shapeStr:v=>v.toFixed(2),wedgeOffset:v=>v+'°'};
+// value readout doubles as a typed numeric input (ported from CoaxialStudio)
+function showVal(id,v){
+  const l=document.getElementById(id+'-v'); if(!l) return;
+  const s=FMT[id]?FMT[id](v):String(v);
+  if(l.tagName==='INPUT'){ if(document.activeElement!==l) l.value=v; l.title=s; }
+  else l.textContent=s;
+}
+SLIDERS.forEach(id=>{
+  const el=document.getElementById(id), lab=document.getElementById(id+'-v');
+  const num=document.createElement('input');
+  num.type='number'; num.className='vin'; num.id=id+'-v';
+  num.min=el.min; num.max=el.max; num.step=el.step; num.value=el.value;
+  lab.replaceWith(num);
+  const commit=v=>{
+    v=Math.min(parseFloat(el.max),Math.max(parseFloat(el.min),v));
+    P[id]=v; el.value=v; showVal(id,v);
+    if(id==='harmonics')buildPhases(); rebuild();
+  };
+  num.addEventListener('change',()=>{const v=parseFloat(num.value); if(!isNaN(v)) commit(v); else showVal(id,P[id]);});
+  el.addEventListener('input',()=>showVal(id,parseFloat(el.value)));
+  el.addEventListener('change',()=>commit(parseFloat(el.value)));
+  showVal(id,parseFloat(el.value));
+});
+document.getElementById('wedge').addEventListener('change',e=>{P.wedge=e.target.checked;rebuild();});
+document.getElementById('wedgeMirror').addEventListener('change',e=>{P.wedgeMirror=e.target.checked;rebuild();});
+['Lx','Ly','Lz'].forEach(id=>{
+  document.getElementById(id).addEventListener('change',e=>{P[id]=Math.max(5,parseFloat(e.target.value)||DEFAULT[id]); rebuild();});
+});
+document.getElementById('seed').addEventListener('change',e=>{P.seed=Math.max(1,parseInt(e.target.value)||1);buildPhases();rebuild();});
+const LABELS={
+  0:{symmetry:'Angular symmetry',harmonics:'Harmonics',radialFreq:'Ring density',bal:'Counter-rotation',spiral:'Spiral'},
+  1:{symmetry:'Mode order',harmonics:'Mode count',radialFreq:'Plate fineness',bal:'Sym ↔ antisym',spiral:'(inactive)'},
+  2:{symmetry:'Pole count',harmonics:'Ring overtones',radialFreq:'Ring density',bal:'Dipole ↔ monopole',spiral:'Field swirl'},
+  3:{symmetry:'Rotational fold',harmonics:'φ octaves',radialFreq:'Base wavenumber',bal:'Phase disorder',spiral:'Golden twist'},
+  4:{symmetry:'Symmetry m',harmonics:'Ring overtones',radialFreq:'Ring density',bal:'Deform',spiral:'Twist'},
+  5:{symmetry:'Spiral family',harmonics:'Ripple overtones',radialFreq:'Point density',bal:'Bump width',spiral:'(inactive)'},
+  6:{symmetry:'Grating fold',harmonics:'Overtones',radialFreq:'Grating density',bal:'Detune angle',spiral:'Scale detune'}
+};
+function relabel(){const L=LABELS[P.mode];for(const id in L){const el=document.getElementById(id+'-l');if(el&&el.firstChild)el.firstChild.nodeValue=L[id]+' ';}}
+document.getElementById('mode').addEventListener('change',e=>{P.mode=parseInt(e.target.value);relabel();rebuild();});
+document.getElementById('shaper').addEventListener('change',e=>{P.shaper=parseInt(e.target.value);rebuild();});
+(function(){const er=document.getElementById('exportRes');
+  er.addEventListener('input',()=>{document.getElementById('exportRes-v').textContent=er.value;});
+  er.addEventListener('change',()=>{P.exportRes=parseInt(er.value); if(GEO)updateReadouts(); scheduleVerify();});
+})();
+document.getElementById('invert').addEventListener('change',e=>{P.invert=e.target.checked;rebuild();});
+document.getElementById('smooth').addEventListener('change',e=>{P.smooth=e.target.checked;rebuild();});
+// material presets: sensible ballnose/stepover/feed starting points per stock material
+const MATERIALS={
+  foam:    {D:6, flute:40, stepover:14, feed:5000},
+  mdf:     {D:6, flute:25, stepover:10, feed:3500},
+  hardwood:{D:6, flute:22, stepover:8,  feed:2200}
+};
+function materialCustom(){const m=document.getElementById('material');if(m)m.value='custom';}
+document.getElementById('material').addEventListener('change',e=>{
+  const m=MATERIALS[e.target.value]; if(!m) return;
+  Object.assign(TOOL,m); syncUI(); previewAnalyze(); flash('material · '+e.target.value);
+});
+document.getElementById('toolD').addEventListener('change',e=>{TOOL.D=Math.max(0.5,parseFloat(e.target.value)||6);materialCustom();previewAnalyze();});
+document.getElementById('flute').addEventListener('change',e=>{TOOL.flute=Math.max(1,parseFloat(e.target.value)||25);materialCustom();previewAnalyze();});
+document.getElementById('feed').addEventListener('change',e=>{TOOL.feed=Math.max(0,parseFloat(e.target.value)||0);materialCustom();renderMStats();});
+(function(){const sov=document.getElementById('stepover');
+  sov.addEventListener('input',()=>{document.getElementById('stepover-v').textContent=sov.value+' %';});
+  sov.addEventListener('change',()=>{TOOL.stepover=parseFloat(sov.value);materialCustom();previewAnalyze();});
+})();
+document.getElementById('overlay').addEventListener('change',e=>{TOOL.overlay=e.target.checked;setOverlay(TOOL.overlay);});
+function stepSeed(d){P.seed=Math.max(1,P.seed+d);document.getElementById('seed').value=P.seed;buildPhases();rebuild();}
+function randSeed(){P.seed=Math.floor(Math.random()*999999)+1;document.getElementById('seed').value=P.seed;buildPhases();rebuild();}
+function syncUI(){
+  SLIDERS.forEach(id=>{const el=document.getElementById(id);if(!el)return;el.value=P[id];showVal(id,P[id]);});
+  const wg=document.getElementById('wedge');if(wg)wg.checked=P.wedge;
+  const wm=document.getElementById('wedgeMirror');if(wm)wm.checked=P.wedgeMirror;
+  const bc=document.getElementById('blockColor');if(bc)bc.value=P.blockColor;paintSwatches();
+  ['Lx','Ly','Lz','seed'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=P[id];});
+  const md=document.getElementById('mode');if(md)md.value=P.mode;
+  const sh=document.getElementById('shaper');if(sh)sh.value=P.shaper;
+  const er=document.getElementById('exportRes');if(er){er.value=P.exportRes;const el=document.getElementById('exportRes-v');if(el)el.textContent=P.exportRes;}
+  const iv=document.getElementById('invert');if(iv)iv.checked=P.invert;
+  const sm=document.getElementById('smooth');if(sm)sm.checked=P.smooth;
+  const td=document.getElementById('toolD');if(td)td.value=TOOL.D;
+  const fl=document.getElementById('flute');if(fl)fl.value=TOOL.flute;
+  const fd=document.getElementById('feed');if(fd)fd.value=TOOL.feed;
+  const so=document.getElementById('stepover');if(so){so.value=TOOL.stepover;const sl=document.getElementById('stepover-v');if(sl)sl.textContent=TOOL.stepover+' %';}
+  const ov=document.getElementById('overlay');if(ov)ov.checked=TOOL.overlay;
+  relabel();
+}
+function resetAll(){
+  Object.assign(P,JSON.parse(JSON.stringify(DEFAULT)));
+  syncUI(); buildPhases(); rebuild();
+  flash('reset to defaults');
+}
+function savePreset(){
+  const blob=new Blob([JSON.stringify({app:'fieldform',version:1,P,TOOL},null,2)],{type:'application/json'});
+  download(blob,`fieldform_preset_s${P.seed}.json`);
+}
+function importPreset(file){
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const d=JSON.parse(r.result);
+      if(d.P){
+        // presets saved before the composition layer lack these keys;
+        // fall back to NEUTRAL (not current/new defaults) so they reproduce exactly
+        Object.assign(P,NEUTRAL_COMP,d.P);
+      }
+      if(d.TOOL) Object.assign(TOOL,d.TOOL);
+      syncUI(); setOverlay(TOOL.overlay); buildPhases(); rebuild();
+      flash('preset imported');
+    }catch(e){ alert('Could not read preset: '+e.message); }
+  };
+  r.readAsText(file);
+}
+let rebuildT=null;
+function rebuild(){busy(true);clearTimeout(rebuildT);rebuildT=setTimeout(()=>{buildModel();busy(false);},10);}
+
+// ════════════════════════════════════════════════════════════════
+//  CURATED PRESETS
+//  Each fully specifies mode, seed, all 9 form params, all 8
+//  composition params and the shaper => clicking one is an exact,
+//  state-independent address. Stock / floor / res / relief / tool
+//  settings are never touched (same contract as the dice).
+// ════════════════════════════════════════════════════════════════
+const PRESET_KEYS=['mode','seed','symmetry','harmonics','radialFreq','bal','spiral','falloff','decay','warpAmp','warpScale','carrier','carrierScale','quiet','quietScale','offX','offY','zoom','shaper','shapeStr','wedge','wedgeCount','wedgeMirror','wedgeOffset'];
+const PRESETS={
+  'Standing rosette': {mode:0,seed:41, symmetry:6,harmonics:3,radialFreq:12,bal:0.5, spiral:0,   falloff:1.2,decay:0.30,warpAmp:0.05,warpScale:2.0, carrier:0.25,carrierScale:1.0,quiet:0.15,quietScale:1.0,offX:0,   offY:0,    zoom:0.95,shaper:0,shapeStr:0.5},
+  'Drift current':    {mode:0,seed:118,symmetry:4,harmonics:3,radialFreq:18,bal:0.85,spiral:0.6, falloff:1.1,decay:0.14,warpAmp:0.15,warpScale:1.6, carrier:0.45,carrierScale:1.3,quiet:0.35,quietScale:0.9,offX:0.25,offY:-0.15,zoom:1.30,shaper:0,shapeStr:0.5},
+  'Plate song':       {mode:1,seed:902,symmetry:5,harmonics:4,radialFreq:14,bal:0.35,spiral:0,   falloff:1.0,decay:0.10,warpAmp:0.06,warpScale:2.2, carrier:0.35,carrierScale:1.1,quiet:0.40,quietScale:1.2,offX:0.10,offY:0.10, zoom:1.10,shaper:3,shapeStr:0.6},
+  'Field lines':      {mode:2,seed:337,symmetry:6,harmonics:2,radialFreq:10,bal:0.75,spiral:0.4, falloff:1.2,decay:0.22,warpAmp:0.08,warpScale:1.8, carrier:0.30,carrierScale:1.2,quiet:0.25,quietScale:1.0,offX:-0.20,offY:0.10,zoom:1.20,shaper:0,shapeStr:0.5},
+  'Golden lattice':   {mode:3,seed:271,symmetry:5,harmonics:4,radialFreq:9, bal:0.5, spiral:0.15,falloff:0.9,decay:0.18,warpAmp:0.05,warpScale:2.5, carrier:0.35,carrierScale:1.4,quiet:0.30,quietScale:1.1,offX:0.18,offY:-0.12,zoom:1.25,shaper:1,shapeStr:0.45},
+  'Terraced swell':   {mode:0,seed:64, symmetry:3,harmonics:2,radialFreq:7, bal:0.5, spiral:0.3, falloff:1.3,decay:0.10,warpAmp:0.12,warpScale:1.2, carrier:0.65,carrierScale:0.9,quiet:0.20,quietScale:0.8,offX:0.12,offY:0.08, zoom:1.10,shaper:2,shapeStr:0.80},
+  'Silent bloom':     {mode:0,seed:55, symmetry:8,harmonics:4,radialFreq:22,bal:0.5, spiral:0.2, falloff:1.0,decay:0.50,warpAmp:0.08,warpScale:2.8, carrier:0.50,carrierScale:1.5,quiet:0.55,quietScale:1.4,offX:0.30,offY:0.20, zoom:1.00,shaper:0,shapeStr:0.5},
+  'Shell bloom':      {mode:4,seed:731,symmetry:7,harmonics:3,radialFreq:14,bal:0.75,spiral:0.25,falloff:1.2,decay:0.20,warpAmp:0.06,warpScale:2.0, carrier:0.30,carrierScale:1.1,quiet:0.20,quietScale:1.0,offX:0.08,offY:-0.06,zoom:1.05,shaper:0,shapeStr:0.5},
+  'Seed head':        {mode:5,seed:213,symmetry:2,harmonics:2,radialFreq:20,bal:0.55,spiral:0,   falloff:1.0,decay:0.25,warpAmp:0.04,warpScale:2.0, carrier:0.35,carrierScale:1.2,quiet:0.15,quietScale:1.0,offX:0,   offY:0,    zoom:1.00,shaper:0,shapeStr:0.5},
+  'Carved relic':     {mode:1,seed:486,symmetry:4,harmonics:3,radialFreq:18,bal:0.6, spiral:0,   falloff:1.1,decay:0.12,warpAmp:0.30,warpScale:1.2, carrier:0.40,carrierScale:1.0,quiet:0.35,quietScale:1.0,offX:0.05,offY:-0.05,zoom:1.15,shaper:3,shapeStr:0.5}
+};
+function applyPreset(name){
+  const pr=PRESETS[name]; if(!pr) return;
+  snapshot();
+  PRESET_KEYS.forEach(k=>{P[k]=(k in pr)?pr[k]:DEFAULT[k];});
+  syncUI(); buildPhases(); rebuild();
+  flash('preset · '+name);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  RANDOMIZE  (form params only; stock / floor / resolution untouched)
+// ════════════════════════════════════════════════════════════════
+const FORMDICE=['symmetry','harmonics','radialFreq','bal','spiral','falloff','decay','warpAmp','warpScale','carrier','carrierScale','quiet','quietScale','offX','offY','zoom','shapeStr'];
+const locked={};
+const history=[];
+function snapshot(){const o={seed:P.seed,mode:P.mode,shaper:P.shaper};FORMDICE.forEach(id=>o[id]=P[id]);history.push(o);if(history.length>80)history.shift();}
+function applyVal(id,v){const el=document.getElementById(id);el.value=v;P[id]=v;showVal(id,v);}
+function rollValue(id){
+  const el=document.getElementById(id);
+  const min=parseFloat(el.min),max=parseFloat(el.max),step=parseFloat(el.step)||0.01;
+  const steps=Math.floor((max-min)/step+1e-9)+1;
+  const v=parseFloat((min+Math.floor(Math.random()*steps)*step).toFixed(4));
+  applyVal(id,v);
+  return v;
+}
+function randomizeOne(id){ snapshot(); rollValue(id); if(id==='harmonics')buildPhases(); rebuild(); }
+function randomizeAll(){
+  snapshot();
+  FORMDICE.forEach(id=>{ if(!locked[id]) rollValue(id); });
+  P.seed=Math.floor(Math.random()*999999)+1; document.getElementById('seed').value=P.seed;
+  buildPhases(); rebuild();
+}
+function undoRandom(){
+  if(!history.length) return;
+  const o=history.pop();
+  P.seed=o.seed; document.getElementById('seed').value=o.seed;
+  if(o.mode!==undefined){P.mode=o.mode;document.getElementById('mode').value=o.mode;relabel();}
+  if(o.shaper!==undefined){P.shaper=o.shaper;document.getElementById('shaper').value=o.shaper;}
+  FORMDICE.forEach(id=>applyVal(id,o[id]));
+  buildPhases(); rebuild();
+}
+function attachDice(id){
+  const el=document.getElementById(id);
+  const wrap=document.createElement('div'); wrap.className='sl';
+  el.parentNode.insertBefore(wrap,el); wrap.appendChild(el);
+  const b=document.createElement('button');
+  b.className='dice'; b.textContent='🎲'; b.title='Randomize this slider';
+  b.addEventListener('click',()=>randomizeOne(id));
+  wrap.appendChild(b);
+  const lk=document.createElement('button');
+  lk.className='lock'; lk.textContent='🔓'; lk.title='Lock from Randomize';
+  lk.addEventListener('click',()=>{locked[id]=!locked[id];lk.textContent=locked[id]?'🔒':'🔓';lk.classList.toggle('on',locked[id]);lk.title=locked[id]?'Locked: skipped by Randomize':'Lock from Randomize';});
+  wrap.appendChild(lk);
+}
+
+// ── theme ───────────────────────────────────────────────────────
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  try{localStorage.setItem('ff-theme',t);}catch(e){}
+  if(scene) scene.background=new THREE.Color(t==='light'?0xe9e6dd:0x0c0d10);
+  const b=document.getElementById('themeBtn'); if(b)b.textContent=t==='light'?'☀':'◑';
+}
+document.getElementById('themeBtn').addEventListener('click',()=>{
+  applyTheme(document.documentElement.getAttribute('data-theme')==='light'?'dark':'light');
+});
+
+// ── block colour ────────────────────────────────────────────────
+const BLOCK_SWATCHES=['#cdbfae','#ece7db','#b8934e','#b06a4a','#6e4b2f','#8a9a6b','#6f7885','#33363d'];
+function applyBlockColor(){ if(mesh&&!TOOL.overlay) mesh.material.color.set(P.blockColor); }
+function paintSwatches(){ document.querySelectorAll('.sw').forEach(b=>b.classList.toggle('on',b.dataset.col===P.blockColor.toLowerCase())); }
+function setBlockColor(c){ P.blockColor=c.toLowerCase(); const i=document.getElementById('blockColor'); if(i)i.value=P.blockColor; applyBlockColor(); paintSwatches(); }
+(function(){ const w=document.getElementById('swatches'); if(!w)return;
+  BLOCK_SWATCHES.forEach(c=>{ const b=document.createElement('button'); b.className='sw'; b.dataset.col=c; b.style.background=c; b.title=c; b.addEventListener('click',()=>setBlockColor(c)); w.appendChild(b); });
+})();
+document.getElementById('blockColor').addEventListener('input',e=>setBlockColor(e.target.value));
+paintSwatches();
+
+// boot
+buildPhases();
+initThree();
+let bootTheme='dark'; try{bootTheme=localStorage.getItem('ff-theme')||'dark';}catch(e){}
+applyTheme(bootTheme);
+buildModel();
+FORMDICE.forEach(attachDice);
+(function(){
+  const g=document.getElementById('presetGrid');
+  Object.keys(PRESETS).forEach(name=>{
+    const b=document.createElement('button');
+    b.className='btn'; b.textContent=name; b.title='Apply preset (exact seed + params; stock untouched)';
+    b.addEventListener('click',()=>applyPreset(name));
+    g.appendChild(b);
+  });
+})();
+relabel();
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===t));
+  const id='tab-'+t.dataset.tab;
+  document.querySelectorAll('.tabpage').forEach(p=>p.classList.toggle('active',p.id===id));
+}));
+document.getElementById('importFile').addEventListener('change',e=>{if(e.target.files[0])importPreset(e.target.files[0]);e.target.value='';});
+
+// ════════════════════════════════════════════════════════════════
+//  GUIDED TOUR  (spotlight overlay, ported from CoaxialStudio)
+// ════════════════════════════════════════════════════════════════
+const TUT_STEPS=[
+  {t:'Pick a field mode', tab:'pattern', tgt:['#mode'],
+   h:'fieldform sculpts a <b>CNC-machinable relief</b> from a mathematical field. Start with the <b>Field mode</b> (highlighted): Coaxial, Chladni, Flux, Resonance, <span class="accent">Superformula</span>, <span class="accent">Phyllotaxis</span> or <span class="accent">Moiré</span>.<br><br>The five sliders below it change meaning per mode — their labels update as you switch.'},
+  {t:'Sculpt & explore', tab:'pattern', tgt:['#presetGrid'],
+   h:'The <b>Presets</b> (highlighted) are exact addresses: mode + seed + every form parameter. Below them, <b>🎲 Randomize</b> rolls all unlocked sliders and a new seed; the 🔒 next to any slider pins it, <b>↶ Undo</b> steps back.<br><br><b>Symmetry fold</b> clips the pattern to a wedge and repeats it around the centre — turn on <span class="accent">Mirror</span> for a kaleidoscope. Every value readout is also a <b>typed input</b>: click it and enter an exact number.'},
+  {t:'Size the stock', tab:'stock', tgt:['#tab-stock'],
+   h:'Set the physical block in mm: <b>X × Y × Z</b> and the <b>retained floor</b> under the relief.<br><br><b>Depth scale</b> and <b>contrast (γ)</b> shape how the 0–1 field maps into millimetres; <b>flat edge margin</b> ramps the relief down to the floor at the border, and <b>machinability smoothing</b> pre-blurs detail your ballnose could never reach.'},
+  {t:'Check machinability', tab:'machining', tgt:['#tab-machining'],
+   h:'Pick a <b>material preset</b> (foam / MDF / hardwood) or set the <b>ballnose Ø, flute length, feed and stepover</b> yourself.<br><br>The stats verify the surface <span class="accent">at export resolution</span>: max slope, tightest concave radius vs tool radius, flute reach and scallop height. Turn on the <b>overlay</b> to paint problem areas on the model — the status LED goes <span class="accent">green</span> when the part is machinable.'},
+  {t:'Export', tab:'project', tgt:['#tab-project'],
+   h:'When it looks right, export a <b>watertight STL in mm</b> for CAM (a preset .json sidecar downloads with it so the file is reproducible), or a <b>16-bit-style heightmap PNG</b>.<br><br><b>Save / import preset</b> stores every parameter as JSON. Reopen this guide anytime with <b>?</b>.'}
+];
+let tutI=0;
+const tutOverlay=document.getElementById('tutOverlay');
+const tutSpot=document.getElementById('tutSpot');
+const tutCard=document.querySelector('.tut');
+const tutDots=document.getElementById('tutDots');
+TUT_STEPS.forEach((_,i)=>{const d=document.createElement('span');d.onclick=()=>{tutI=i;tutPaint();};tutDots.appendChild(d);});
+function tutUnionRect(sels){
+  let r=null;
+  for(const s of sels||[]){const el=document.querySelector(s);if(!el)continue;
+    const b=el.getBoundingClientRect();if(b.width===0&&b.height===0)continue;
+    if(!r)r={l:b.left,t:b.top,rt:b.right,bt:b.bottom};
+    else{r.l=Math.min(r.l,b.left);r.t=Math.min(r.t,b.top);r.rt=Math.max(r.rt,b.right);r.bt=Math.max(r.bt,b.bottom);}
+  }
+  return r;
+}
+function tutPlaceCard(rect){
+  const cw=tutCard.offsetWidth,ch=tutCard.offsetHeight,vw=innerWidth,vh=innerHeight,m=16;
+  let left,top;
+  if(!rect){left=(vw-cw)/2;top=(vh-ch)/2;}
+  else if(vw-rect.rt>=cw+2*m){left=rect.rt+m;top=rect.t;}
+  else if(vh-rect.bt>=ch+2*m){top=rect.bt+m;left=rect.l;}
+  else if(rect.t>=ch+2*m){top=rect.t-ch-m;left=rect.l;}
+  else{left=(vw-cw)/2;top=(vh-ch)/2;}
+  left=Math.max(m,Math.min(vw-cw-m,left));
+  top=Math.max(m,Math.min(vh-ch-m,top));
+  tutCard.style.left=left+'px';tutCard.style.top=top+'px';tutCard.style.transform='none';
+}
+function tutSpotlight(sels){
+  if(sels&&sels.length){const f=document.querySelector(sels[0]);if(f&&f.scrollIntoView)f.scrollIntoView({block:'nearest'});}
+  const r=tutUnionRect(sels),pad=8;
+  if(!r){tutSpot.style.display='none';tutPlaceCard(null);return;}
+  tutSpot.style.display='block';
+  tutSpot.style.left=(r.l-pad)+'px';tutSpot.style.top=(r.t-pad)+'px';
+  tutSpot.style.width=(r.rt-r.l+2*pad)+'px';tutSpot.style.height=(r.bt-r.t+2*pad)+'px';
+  tutPlaceCard({l:r.l-pad,t:r.t-pad,rt:r.rt+pad,bt:r.bt+pad});
+}
+function tutPaint(){
+  const s=TUT_STEPS[tutI];
+  if(s.tab){const tb=document.querySelector('.tab[data-tab='+s.tab+']');if(tb&&!tb.classList.contains('active'))tb.click();}
+  document.getElementById('tutKicker').textContent='Quick start · '+(tutI+1)+' of '+TUT_STEPS.length;
+  document.getElementById('tutTitle').textContent=s.t;
+  document.getElementById('tutBody').innerHTML=s.h;
+  Array.from(tutDots.children).forEach((d,i)=>d.classList.toggle('on',i===tutI));
+  document.getElementById('tutBack').style.visibility=tutI===0?'hidden':'visible';
+  document.getElementById('tutNext').textContent=tutI===TUT_STEPS.length-1?'Start':'Next';
+  tutSpotlight(s.tgt);
+}
+function tutOpen(){tutOverlay.classList.add('show');tutI=0;tutPaint();}
+function tutClose(){tutOverlay.classList.remove('show');}
+document.getElementById('helpBtn').onclick=tutOpen;
+document.getElementById('tutSkip').onclick=tutClose;
+document.getElementById('tutBack').onclick=()=>{if(tutI>0){tutI--;tutPaint();}};
+document.getElementById('tutNext').onclick=()=>{if(tutI<TUT_STEPS.length-1){tutI++;tutPaint();}else tutClose();};
+tutOverlay.addEventListener('click',e=>{if(e.target===tutOverlay)tutClose();});
+window.addEventListener('keydown',e=>{if(tutOverlay.classList.contains('show')&&e.key==='Escape')tutClose();});
+window.addEventListener('resize',()=>{if(tutOverlay.classList.contains('show'))tutPaint();});
+</script>
+</body>
+</html>
