@@ -313,7 +313,7 @@ const P = {
 };
 const DEFAULT = JSON.parse(JSON.stringify(P));
 // tuned opening config (studio): the setup shown on first load and restored by "Reset to defaults"
-const OPENING={symmetry:5,harmonics:3,radialFreq:20,bal:0.72,spiral:-0.15,falloff:1.55,decay:1.22,warpAmp:0.07,warpScale:2.5,margin:12,smoothR:2.5,carrier:0.1,carrierScale:1.2,quiet:0.12,quietScale:1.1,offX:0.15,offY:-0.1,zoom:1,wedge:false,wedgeCount:12,wedgeMirror:true,wedgeOffset:68};
+const OPENING={symmetry:5,harmonics:3,radialFreq:20,bal:0.72,spiral:-0.15,falloff:1.55,decay:1.22,warpAmp:0.07,warpScale:2.5,margin:12,smoothR:2.5,carrier:0.1,carrierScale:1.2,quiet:0.12,quietScale:1.1,offX:0.15,offY:-0.1,zoom:1,wedge:true,wedgeCount:12,wedgeMirror:true,wedgeOffset:68};
 Object.assign(P,OPENING); Object.assign(DEFAULT,OPENING);
 // neutral composition = exact pre-composition behavior (used for legacy preset import)
 const NEUTRAL_COMP = {carrier:0, carrierScale:1.2, quiet:0, quietScale:1.0, offX:0, offY:0, zoom:1, shaper:0, shapeStr:0.5};
